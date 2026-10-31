@@ -25,6 +25,7 @@ public final class ScreenCapture: NSObject, SCStreamOutput, SCStreamDelegate, @u
     public typealias FrameHandler = @Sendable (_ bgra: UnsafePointer<UInt8>, _ width: Int, _ height: Int, _ bytesPerRow: Int) -> Void
 
     private var stream: SCStream?
+    private var configuration: SCStreamConfiguration?
     private var handler: FrameHandler?
     private let queue = DispatchQueue(label: "booxsync.capture")
 
@@ -33,7 +34,7 @@ public final class ScreenCapture: NSObject, SCStreamOutput, SCStreamDelegate, @u
         CGPreflightScreenCaptureAccess() || CGRequestScreenCaptureAccess()
     }
 
-    public func start(displayID: CGDirectDisplayID, width: Int, height: Int, framesPerSecond: Double, handler: @escaping FrameHandler) async throws {
+    public func start(displayID: CGDirectDisplayID, width: Int, height: Int, framesPerSecond: Double, showsCursor: Bool = true, handler: @escaping FrameHandler) async throws {
         var found: SCDisplay?
         for attempt in 0..<12 {
             let content: SCShareableContent
@@ -57,19 +58,28 @@ public final class ScreenCapture: NSObject, SCStreamOutput, SCStreamDelegate, @u
         configuration.pixelFormat = kCVPixelFormatType_32BGRA
         configuration.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(max(1, framesPerSecond)))
         configuration.queueDepth = 3
-        configuration.showsCursor = true
+        configuration.showsCursor = showsCursor
 
         let filter = SCContentFilter(display: display, excludingWindows: [])
         let stream = SCStream(filter: filter, configuration: configuration, delegate: self)
         try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: queue)
         self.handler = handler
         self.stream = stream
+        self.configuration = configuration
         try await stream.startCapture()
+    }
+
+    /// Applies to the running stream, no restart needed.
+    public func setShowsCursor(_ show: Bool) async {
+        guard let stream, let configuration else { return }
+        configuration.showsCursor = show
+        try? await stream.updateConfiguration(configuration)
     }
 
     public func stop() async {
         let current = stream
         stream = nil
+        configuration = nil
         handler = nil
         try? await current?.stopCapture()
     }

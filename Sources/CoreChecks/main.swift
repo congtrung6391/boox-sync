@@ -86,6 +86,11 @@ let mid = PenMapping.screenPoint(PenSample(x: 0.25, y: 0.1, touching: true, eras
 check("pen mapping rotates 180 in landscape", mid?.x == 0.75 && mid?.y == 0.9)
 check("pen mapping disabled in portrait", PenMapping.screenPoint(PenSample(x: 0, y: 0, touching: true, erasing: false), frameWidth: 1404, frameHeight: 1872) == nil)
 
+let sampleWindows = WindowMover.listWindows()
+check("window list returns app windows (\(sampleWindows.count))", !sampleWindows.isEmpty)
+for w in sampleWindows.prefix(5) { print("info window \(w.id) \(w.appName) - \(w.title.prefix(40)) \(Int(w.bounds.width))x\(Int(w.bounds.height))") }
+print("info accessibility trusted for this process: \(WindowMover.isTrusted(prompt: false))")
+
 let fm = FileManager.default
 let adb = AdbLocator.find(bundleResources: nil, environmentPath: "/nonexistent", fileManager: fm)
 check("locates adb (homebrew or /usr/local)", adb != nil || !fm.isExecutableFile(atPath: "/opt/homebrew/bin/adb"))

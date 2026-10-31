@@ -54,6 +54,7 @@ Companion docs: DESIGN.md (architecture), SPIKE.md (measurements). Update the St
 | 3.6 | Install apk from the Mac app (`adb install`, version check, launch with `am start`) | 3.4, 0.4 | one click installs and starts | not needed: the browser is opened with am start, no install |
 | 3.7 | Touch/pen input from Boox back to Mac cursor (optional) | 3.4, 2.4 | tap moves the Mac cursor | todo, optional |
 | 3.9 | **Alternative with no app install:** Mac app serves a web page on localhost, `adb reverse` tunnels it over USB, the Boox's own browser (org.chromium.chrome) opens it via `am start -a VIEW`; `input tap` triggers fullscreen. Tiles over WebSocket drawn on a canvas. Verified that the page loads and animates via adb reverse; fullscreen, refresh quality and WebSocket tiles untested | 0.3 | decision between APK and web viewer | chosen and built: web viewer |
+| 3.10 | **Window picker for the second display:** list windows in the Display tab, send one to the Boox display (fills the display below its menu bar) with one click, pull it back to its old place; pull everything back on Stop. Needs Accessibility permission. Mac pointer drawn into the capture is a switch (default on) | 3.1, 3.2 | pick a window, it appears on the Boox; pull back restores it | built (incl. bring to top), awaiting user test |
 | 3.8 | Fallback if 3.0 fails: use the Mac to push a still-image view via an existing viewer app opened with `am start`, or abandon feature 1 | 3.0 | decision recorded | contingency |
 
 ### WS4 Packaging and release

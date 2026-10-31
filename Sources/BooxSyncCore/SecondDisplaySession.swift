@@ -31,6 +31,9 @@ public final class SecondDisplaySession: @unchecked Sendable {
         }
     }
 
+    /// Whether the Mac pointer is drawn into the Boox picture. Change it any time with `setShowsCursor`.
+    public private(set) var showsCursor = true
+
     public var onStatus: (@Sendable (String) -> Void)?
     public var onStats: (@Sendable (Stats) -> Void)?
 
@@ -51,6 +54,14 @@ public final class SecondDisplaySession: @unchecked Sendable {
     public init(fs: BooxFS) {
         self.fs = fs
     }
+
+    public func setShowsCursor(_ show: Bool) async {
+        locked { showsCursor = show }
+        await capture.setShowsCursor(show)
+    }
+
+    /// The virtual display while the session runs.
+    public var virtualDisplayID: CGDirectDisplayID? { locked { display?.displayID } }
 
     public func start() async throws {
         guard ScreenCapture.requestPermission() else { throw ScreenCaptureError.permissionDenied }
@@ -109,7 +120,7 @@ public final class SecondDisplaySession: @unchecked Sendable {
         differ.reset()
 
         onStatus?("Capturing the virtual display...")
-        try await capture.start(displayID: created.displayID, width: width, height: height, framesPerSecond: 6) { [weak self] bgra, w, h, stride in
+        try await capture.start(displayID: created.displayID, width: width, height: height, framesPerSecond: 6, showsCursor: locked { showsCursor }) { [weak self] bgra, w, h, stride in
             self?.handleFrame(bgra, w, h, stride)
         }
         onStatus?("Running: drag windows to the right edge of your main display")
