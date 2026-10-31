@@ -2,6 +2,10 @@
 # Build dist/BooxSync.app from the Swift package (no Xcode needed).
 # Bundles adb (universal, system libraries only) so the app works without Homebrew.
 # Usage: scripts/build-app.sh [--adb /path/to/adb] [--no-bundle-adb]
+# Environment (all optional, used by the release workflow):
+#   BOOXSYNC_VERSION         marketing version for Info.plist (default 0.1.0)
+#   BOOXSYNC_BUILD           build number for Info.plist (default 1)
+#   BOOXSYNC_SIGN_IDENTITY   codesign identity name or hash (default: the local certificate, else ad-hoc)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -14,8 +18,12 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# Prefer the stable local certificate (scripts/setup-signing.sh) so macOS permissions survive rebuilds.
-SIGN_ID=$(security find-identity -p codesigning | awk '/BooxSync Local Signing/ {print $2; exit}')
+VERSION=${BOOXSYNC_VERSION:-0.1.0}
+BUILD=${BOOXSYNC_BUILD:-1}
+
+# Prefer an identity from the environment (CI), then the stable local certificate (scripts/setup-signing.sh) so
+# macOS permissions survive rebuilds, then fall back to an ad-hoc signature.
+SIGN_ID=${BOOXSYNC_SIGN_IDENTITY:-$(security find-identity -p codesigning | awk '/BooxSync Local Signing/ {print $2; exit}')}
 if [ -z "$SIGN_ID" ]; then
   SIGN_ID="-"
   echo "No local signing certificate: using an ad-hoc signature (permissions reset on every build). Run scripts/setup-signing.sh."
@@ -53,8 +61,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleExecutable</key><string>BooxSync</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>${VERSION}</string>
+  <key>CFBundleVersion</key><string>${BUILD}</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSRemindersFullAccessUsageDescription</key><string>BooxSync shows your open reminders in the Boox dashboard to-do widget.</string>
