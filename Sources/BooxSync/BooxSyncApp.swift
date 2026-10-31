@@ -1,8 +1,34 @@
 import SwiftUI
 import BooxSyncCore
 
+/// Brings the main window back. SwiftUI gives no way to open a window from outside a view, so the
+/// menu bar label (always alive) stores `openWindow` here for the app delegate to use.
+@MainActor
+enum MainWindow {
+    static var open: (() -> Void)?
+
+    static func show() {
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = NSApp.windows.first(where: { $0.identifier?.rawValue.contains("main") == true && $0.canBecomeMain }) {
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            open?()
+        }
+    }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Clicking the app in Finder, Launchpad or the Dock while only the menu bar icon is left.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { MainActor.assumeIsolated { MainWindow.show() } }
+        return true
+    }
+}
+
 @main
 struct BooxSyncApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+    @Environment(\.openWindow) private var openWindow
     @StateObject private var monitor = DeviceMonitor()
 
     init() {
@@ -75,6 +101,7 @@ struct BooxSyncApp: App {
             MenuContent(monitor: monitor)
         } label: {
             Image(systemName: monitor.status.isConnected ? "ipad.landscape" : "ipad.landscape.slash")
+                .onAppear { MainWindow.open = { openWindow(id: "main") } }
         }
         .menuBarExtraStyle(.window)
     }

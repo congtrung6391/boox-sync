@@ -12,6 +12,7 @@ struct MenuContent: View {
             }
             Divider()
             HStack {
+                Button("Open BooxSync") { MainWindow.show() }
                 Button("Refresh") { Task { await monitor.refresh() } }
                 Spacer()
                 Button("Quit") { NSApplication.shared.terminate(nil) }
