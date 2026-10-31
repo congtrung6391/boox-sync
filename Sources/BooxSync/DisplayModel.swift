@@ -53,18 +53,6 @@ final class DisplayModel: ObservableObject {
 
     var isActive: Bool { phase == .starting || phase == .running }
 
-    /// Show a running second display with made-up windows (for screenshots). Touches nothing real.
-    func enterDemo() {
-        phase = .running
-        status = "Running"
-        stats = SecondDisplaySession.Stats(width: 1872, height: 1302, tilesPerSecond: 3, kilobytesPerSecond: 28)
-        accessibilityTrusted = true
-        let demo = Demo.windows()
-        windowsOnBoox = demo.boox
-        windowsOnMac = demo.mac
-        dashboard.loadSample()
-    }
-
     func start() {
         guard !isActive else { return }
         phase = .starting

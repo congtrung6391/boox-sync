@@ -35,7 +35,6 @@ final class DashboardModel: ObservableObject {
     }
 
     private static func save<T: Encodable>(_ value: T, key: String) {
-        guard Demo.persistSettings else { return }   // sample data must never overwrite real settings
         if let data = try? JSONEncoder().encode(value) { defaults.set(data, forKey: key) }
     }
 
@@ -55,7 +54,7 @@ final class DashboardModel: ObservableObject {
     @Published var fahrenheit: Bool = DashboardModel.defaults.object(forKey: "dashboard.fahrenheit") as? Bool
         ?? (Locale.current.measurementSystem == .us) {
         didSet {
-            if Demo.persistSettings { Self.defaults.set(fahrenheit, forKey: "dashboard.fahrenheit") }
+            Self.defaults.set(fahrenheit, forKey: "dashboard.fahrenheit")
             Task { await refreshWeather(force: true) }
         }
     }
@@ -99,7 +98,6 @@ final class DashboardModel: ObservableObject {
     private var fs: BooxFS?
     private var artworkURL: URL?
     private var lastWeatherFetch: Date?
-    private(set) var isDemo = false
 
     private var needsResources: Bool { !layout.kinds().isDisjoint(with: [.cpu, .memory, .disk, .network, .battery]) }
 
@@ -107,7 +105,6 @@ final class DashboardModel: ObservableObject {
 
     /// The editor and the Boox window both show the dashboard; data loops run while at least one does.
     func retain(fs: BooxFS?) {
-        guard !isDemo else { return }   // demo data is fixed: no sampling, no network, no adb
         consumers += 1
         if let fs { self.fs = fs }
         guard tasks.isEmpty else { return }
@@ -169,7 +166,7 @@ final class DashboardModel: ObservableObject {
 
     /// Weather changes slowly: at most every 30 minutes unless the place or units changed.
     func refreshWeather(force: Bool) async {
-        guard !isDemo, layout.kinds().contains(.weather) else { return }
+        guard layout.kinds().contains(.weather) else { return }
         if place == nil { place = await WeatherService.guessPlace(); return }   // setting `place` triggers a forced refresh
         guard let place else { weather = .needsPlace; return }
         if !force, let last = lastWeatherFetch, Date().timeIntervalSince(last) < 1800 { return }
@@ -184,7 +181,7 @@ final class DashboardModel: ObservableObject {
     }
 
     func refreshReminders() async {
-        guard !isDemo, layout.kinds().contains(.todo), todoSource == .reminders else { return }
+        guard layout.kinds().contains(.todo), todoSource == .reminders else { return }
         switch await remindersProvider.fetch(list: reminderList.isEmpty ? nil : reminderList) {
         case .items(let items): reminders = .items(items)
         case .denied: reminders = .denied
@@ -229,52 +226,44 @@ final class DashboardModel: ObservableObject {
         layout.items[index].text = text
     }
 
-    /// Fixed data so the layout can be rendered without permissions or network (`BooxSync --render-dashboard out.png`)
-    /// and shown in demo mode. Nothing here is saved.
+    /// Fixed data so the layout can be rendered without permissions or network (`BooxSync --render-dashboard out.png`).
     static func sample() -> DashboardModel {
         let model = DashboardModel()
-        model.loadSample()
-        return model
-    }
-
-    func loadSample() {
-        isDemo = true
-        layout = .standard
-        place = WeatherPlace(name: "Hanoi", admin: "Hanoi", country: "Vietnam", latitude: 21.03, longitude: 105.85)
-        todoSource = .local
-        fahrenheit = false   // the sample temperatures are Celsius
+        model.layout = .standard
         var snapshot = ResourceSnapshot()
         snapshot.cpu = 0.37
         snapshot.memoryUsed = 25 << 30; snapshot.memoryTotal = 32 << 30
         snapshot.diskUsed = 358 << 30; snapshot.diskTotal = 926 << 30
         snapshot.networkDown = 1_250_000; snapshot.networkUp = 84_000
         snapshot.batteryPercent = 87; snapshot.batteryCharging = true
-        resources = snapshot
-        cpuHistory = (0..<60).map { (index: Int) -> Double in
+        model.resources = snapshot
+        model.cpuHistory = (0..<60).map { (index: Int) -> Double in
             let x = Double(index)
             let slow = 0.2 * sin(x / 5)
             let fast = 0.1 * cos(x / 2)
             return 0.25 + slow + fast
         }
-        networkHistory = (0..<60).map { (index: Int) -> Double in
+        model.networkHistory = (0..<60).map { (index: Int) -> Double in
             let x = Double(index)
             return 400_000 + 300_000 * sin(x / 4) + 200_000 * cos(x / 1.5)
         }
-        booxBattery = 64
-        nowPlaying = .playing(NowPlaying(
+        model.booxBattery = 64
+        model.nowPlaying = .playing(NowPlaying(
             source: "Spotify", title: "We Are The People", artist: "Empire Of The Sun", album: "Walking On A Dream",
             isPlaying: true, position: 83, duration: 233, artworkURL: nil))
-        todos = [
+        model.todos = [
             TodoItem(title: "Reply to the visa email"), TodoItem(title: "Book flights for December"),
-            TodoItem(title: "Finish the essay draft"), TodoItem(title: "Buy paper refills"),
+            TodoItem(title: "Finish BooxSync dashboard"), TodoItem(title: "Buy paper refills"),
             TodoItem(title: "Review IELTS writing task 2", done: true),
         ]
+        let place = WeatherPlace(name: "Hanoi", admin: "Hanoi", country: "Vietnam", latitude: 21.03, longitude: 105.85)
         let start = Calendar.current.startOfDay(for: Date())
         let days = (0..<5).map { (offset: Int) -> DailyForecast in
             DailyForecast(date: Calendar.current.date(byAdding: .day, value: offset, to: start)!,
                           code: [3, 61, 80, 2, 0][offset], high: 31 - Double(offset), low: 24 - Double(offset) / 2, rainChance: [10, 70, 60, 20, 0][offset])
         }
-        weather = .ready(WeatherReport(place: place!, temperature: 29.6, feelsLike: 33.1, humidity: 64, windKph: 9.4, code: 3,
-                                       isDay: true, sunrise: "06:01", sunset: "17:25", daily: days, fetched: Date()))
+        model.weather = .ready(WeatherReport(place: place, temperature: 29.6, feelsLike: 33.1, humidity: 64, windKph: 9.4, code: 3,
+                                             isDay: true, sunrise: "06:01", sunset: "17:25", daily: days, fetched: Date()))
+        return model
     }
 }

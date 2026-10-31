@@ -64,19 +64,6 @@ python3 scripts/test_release.py         # unit tests for the release script
 
 Output is block-buffered when redirected to a file, so wait for the process to end instead of watching the log.
 
-### Demo mode and README screenshots
-
-`BooxSync --demo files|mirror|display|dashboard` runs the real app with made-up data: a fake Boox, sample files, windows, music, weather and to-dos. Nothing is read from the Boox or the Mac, nothing is saved, and no adb, network or permission prompt is involved (add `--demo-path /sdcard/Books` to open the Files tab in a folder). `scripts/capture-screenshots.sh` uses it to regenerate everything in `assets/screenshots/`: it makes the Files and Display shots (the two that would list real files and windows): it launches the dev app once per tab in English, captures only that window with `screencapture -l`, and renders the Boox dashboards headlessly. It needs Screen Recording permission for your terminal, and identifies its own windows by a unique `--demo-run` marker so a BooxSync you have open is left alone. `mirror.png` is a real capture: open the release app on that tab and run `screencapture -l <windowID> -o -x`. Re-run after UI changes and commit the images.
-
-Layouts can be checked without a window or any permission:
-
-```bash
-BooxSync --render-dashboard out.png [presetIndex] [dark] [appkit]   # draw the dashboard with sample data
-BooxSync --render-variants clock out.png                            # every style of one component
-```
-
-(Run it from the build output, for example `.build/debug/BooxSync`.)
-
 ## Dev builds and release builds
 
 Local builds and the released app are separate apps to macOS, so their permissions never mix:

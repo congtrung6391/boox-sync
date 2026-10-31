@@ -107,7 +107,7 @@ struct FileBrowserView: View {
                 Text(entry.modified.map { $0.formatted(date: .abbreviated, time: .shortened) } ?? "--")
                     .foregroundStyle(.secondary)
             }
-            .width(min: 150, ideal: 200, max: 260)
+            .width(min: 120, ideal: 160, max: 200)
         } rows: {
             ForEach(model.sortedEntries) { entry in
                 TableRow(entry).itemProvider { model.itemProvider(for: entry) }

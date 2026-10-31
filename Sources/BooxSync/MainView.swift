@@ -15,7 +15,6 @@ private final class ModelHolder {
         browser = FileBrowserModel(fs: fs)
         display = DisplayModel(fs: fs)
         serial = fs.serial
-        if Demo.isOn { display?.enterDemo() }
     }
 
     func browser(for fs: BooxFS) -> FileBrowserModel { refresh(for: fs); return browser! }
@@ -32,8 +31,7 @@ struct MainView: View {
     }
 
     @ObservedObject var monitor: DeviceMonitor
-
-    @State private var tab: Tab = Demo.tab.flatMap { Tab(rawValue: $0.capitalized) } ?? .files
+    @State private var tab: Tab = .files
     @State private var holder = ModelHolder()
 
     var body: some View {

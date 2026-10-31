@@ -175,8 +175,6 @@ private struct WindowRow: View {
     }
 
     private var icon: NSImage {
-        (Demo.isOn ? Demo.icon(forApp: window.appName) : nil)
-            ?? NSRunningApplication(processIdentifier: window.pid)?.icon
-            ?? NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)!
+        NSRunningApplication(processIdentifier: window.pid)?.icon ?? NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)!
     }
 }
