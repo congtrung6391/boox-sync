@@ -11,6 +11,29 @@ Use your Boox e-ink tablet with your Mac over a USB-C cable: move files, watch t
 
 Tested on a Boox NoteX (firmware 4.1.1) with macOS 26. Other Boox models may work but have not been tried.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/files.png" width="440" alt="The Files tab with a transfer in progress"><br><b>Files</b>: browse the Boox, drag files in and out</td>
+    <td align="center"><img src="assets/screenshots/mirror.png" width="440" alt="The Mirror tab showing a notebook page"><br><b>Mirror</b>: the Boox screen on your Mac</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/display.png" width="440" alt="The Display tab listing windows on the Boox and on the Mac"><br><b>Second display</b>: send windows to the Boox and back</td>
+    <td align="center"><img src="assets/screenshots/dashboard.png" width="440" alt="The Dashboard editor"><br><b>Dashboard</b>: design what the Boox shows</td>
+  </tr>
+</table>
+
+What the Boox shows when no window covers it, in light, dark, and a system-monitor layout:
+
+<p>
+  <img src="assets/screenshots/boox-dashboard-light.png" width="32%" alt="Dashboard, light theme">
+  <img src="assets/screenshots/boox-dashboard-dark.png" width="32%" alt="Dashboard, dark theme">
+  <img src="assets/screenshots/boox-dashboard-monitor.png" width="32%" alt="Dashboard, monitor layout">
+</p>
+
+<sub>The screenshots use made-up sample data, not real files, windows, music or reminders.</sub>
+
 ## What you need
 
 - A Mac with macOS 14 (Sonoma) or later.
@@ -115,15 +138,6 @@ Whatever is not covered by a window shows your dashboard. Open the **Dashboard**
 | To-do says "Allow Reminders access" | Allow it in **Privacy & Security > Reminders**. |
 | Weather is unavailable | The Mac needs internet. Check the city in the weather component. |
 | The Boox shows browser toolbars | Tap the page once; it should go fullscreen. |
-| A permission keeps asking, or BooxSync appears twice in Privacy settings | Reset it and allow it again, using the three commands below. |
-
-```bash
-tccutil reset ScreenCapture dev.booxsync.app
-tccutil reset Accessibility dev.booxsync.app
-tccutil reset AppleEvents dev.booxsync.app
-```
-
-Do not run these again after allowing, because each one removes the permission.
 
 ## Your privacy
 

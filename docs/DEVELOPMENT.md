@@ -64,6 +64,10 @@ python3 scripts/test_release.py         # unit tests for the release script
 
 Output is block-buffered when redirected to a file, so wait for the process to end instead of watching the log.
 
+### Demo mode and README screenshots
+
+`BooxSync --demo files|mirror|display|dashboard` runs the real app with made-up data: a fake Boox, sample files, windows, music, weather and to-dos. Nothing is read from the Boox or the Mac, nothing is saved, and no adb, network or permission prompt is involved (add `--demo-path /sdcard/Books` to open the Files tab in a folder). `scripts/capture-screenshots.sh` uses it to regenerate everything in `assets/screenshots/`: it makes the Files and Display shots (the two that would list real files and windows): it launches the dev app once per tab in English, captures only that window with `screencapture -l`, and renders the Boox dashboards headlessly. It needs Screen Recording permission for your terminal, and identifies its own windows by a unique `--demo-run` marker so a BooxSync you have open is left alone. `mirror.png` and `dashboard.png` are real captures: open the release app on that tab and run `screencapture -l <windowID> -o -x`. Re-run after UI changes and commit the images.
+
 Layouts can be checked without a window or any permission:
 
 ```bash
@@ -104,6 +108,14 @@ tccutil reset AppleEvents dev.booxsync.app.dev
 ```
 
 A reset removes the grant, so do not repeat it after granting.
+
+**Release installed next to a local build.** Releases built before the dev/release split (1.0.x and 1.1.0) used the bundle id `dev.booxsync.app` for local builds too, so a downloaded release and an older local build left mixed or duplicate rows in Privacy settings. Clear the release identity once and grant it again; end users never need this:
+
+```bash
+tccutil reset ScreenCapture dev.booxsync.app
+tccutil reset Accessibility dev.booxsync.app
+tccutil reset AppleEvents dev.booxsync.app
+```
 
 ## Commit messages, versions and the changelog
 
