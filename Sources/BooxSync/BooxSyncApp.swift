@@ -5,6 +5,26 @@ import BooxSyncCore
 struct BooxSyncApp: App {
     @StateObject private var monitor = DeviceMonitor()
 
+    init() {
+        // `BooxSync --render-dashboard out.png` draws the dashboard with sample data and exits, to check the layout.
+        if let flag = CommandLine.arguments.firstIndex(of: "--render-dashboard"), CommandLine.arguments.count > flag + 1 {
+            let path = CommandLine.arguments[flag + 1]
+            MainActor.assumeIsolated {
+                let view = DashboardView(model: DashboardModel.sample(), topInset: 37).frame(width: 1872, height: 1302)
+                let renderer = ImageRenderer(content: view)
+                renderer.scale = 1
+                if let image = renderer.cgImage,
+                   let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) {
+                    try? png.write(to: URL(fileURLWithPath: path))
+                    print("rendered \(path)")
+                } else {
+                    print("render failed")
+                }
+            }
+            exit(0)
+        }
+    }
+
     var body: some Scene {
         Window("BooxSync", id: "main") {
             MainView(monitor: monitor)

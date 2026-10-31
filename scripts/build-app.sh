@@ -14,6 +14,13 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Prefer the stable local certificate (scripts/setup-signing.sh) so macOS permissions survive rebuilds.
+SIGN_ID=$(security find-identity -p codesigning | awk '/BooxSync Local Signing/ {print $2; exit}')
+if [ -z "$SIGN_ID" ]; then
+  SIGN_ID="-"
+  echo "No local signing certificate: using an ad-hoc signature (permissions reset on every build). Run scripts/setup-signing.sh."
+fi
+
 swift build -c release
 BIN=$(swift build -c release --show-bin-path)/BooxSync
 
@@ -27,7 +34,7 @@ if [ -n "$ADB_SRC" ]; then
   mkdir -p "$APP/Contents/Resources/licenses"
   NOTICE="$(dirname "$ADB_REAL")/NOTICE.txt"
   [ -f "$NOTICE" ] && cp "$NOTICE" "$APP/Contents/Resources/licenses/android-platform-tools-NOTICE.txt"
-  codesign --force --sign - "$APP/Contents/Resources/adb"
+  codesign --force --sign "$SIGN_ID" "$APP/Contents/Resources/adb"
   echo "Bundled adb: $("$APP/Contents/Resources/adb" version | head -1)"
 else
   echo "adb not bundled; the app will look for adb on this Mac"
@@ -47,9 +54,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>NSAppleEventsUsageDescription</key><string>BooxSync reads the current track from Spotify or Music to show it on the Boox dashboard.</string>
 </dict>
 </plist>
 PLIST
 
-codesign --force --sign - "$APP"
+codesign --force --sign "$SIGN_ID" "$APP"
 echo "Built $APP"

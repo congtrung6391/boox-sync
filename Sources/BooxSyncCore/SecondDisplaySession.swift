@@ -97,6 +97,7 @@ public final class SecondDisplaySession: @unchecked Sendable {
         display?.destroy()
         display = nil
         server.stop()
+        await fs.closeDisplayTabs()
         await fs.closeWebDisplay()
         try? await fs.goHome()
         onStatus?("Stopped")

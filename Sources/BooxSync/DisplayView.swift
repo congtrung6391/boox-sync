@@ -70,6 +70,9 @@ struct DisplayView: View {
             .padding(12)
             Divider()
 
+            DashboardControls(model: model, dashboard: model.dashboard)
+            Divider()
+
             if !model.accessibilityTrusted {
                 accessibilityBanner
                 Divider()
@@ -78,7 +81,7 @@ struct DisplayView: View {
             List {
                 Section {
                     if model.windowsOnBoox.isEmpty {
-                        Text("Nothing here yet. Send a window from the list below.")
+                        Text("No windows on top. The Boox shows the dashboard. Send a window from the list below.")
                             .foregroundStyle(.secondary)
                     }
                     ForEach(Array(model.windowsOnBoox.enumerated()), id: \.element.id) { index, window in
@@ -160,5 +163,27 @@ private struct WindowRow: View {
 
     private var icon: NSImage {
         NSRunningApplication(processIdentifier: window.pid)?.icon ?? NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)!
+    }
+}
+
+private struct DashboardControls: View {
+    @ObservedObject var model: DisplayModel
+    @ObservedObject var dashboard: DashboardModel
+
+    var body: some View {
+        HStack(spacing: 16) {
+            Toggle("Dashboard on the Boox", isOn: $model.dashboardOn).toggleStyle(.switch).fixedSize()
+            Divider().frame(height: 18)
+            Group {
+                Toggle("Clock", isOn: $dashboard.showClock)
+                Toggle("Calendar", isOn: $dashboard.showCalendar)
+                Toggle("Now playing", isOn: $dashboard.showNowPlaying)
+                Toggle("System", isOn: $dashboard.showResources)
+            }
+            .toggleStyle(.checkbox)
+            .disabled(!model.dashboardOn)
+            Spacer()
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
     }
 }

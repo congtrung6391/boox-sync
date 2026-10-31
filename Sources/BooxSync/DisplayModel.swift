@@ -22,9 +22,23 @@ final class DisplayModel: ObservableObject {
     @Published var windowError: String?
 
     /// Draw the Mac pointer into the Boox picture. Handy now and then, hard to aim on e-ink.
-    @AppStorage("display.showsCursor") var showsCursor = true {
-        didSet { Task { await session?.setShowsCursor(showsCursor) } }
+    @Published var showsCursor: Bool = UserDefaults.standard.object(forKey: "display.showsCursor") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(showsCursor, forKey: "display.showsCursor")
+            Task { await session?.setShowsCursor(showsCursor) }
+        }
     }
+
+    /// The dashboard (clock, calendar, music, system) shown on the Boox behind any windows sent there.
+    let dashboard = DashboardModel()
+    @Published var dashboardOn: Bool = UserDefaults.standard.object(forKey: "dashboard.enabled") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(dashboardOn, forKey: "dashboard.enabled")
+            applyDashboard()
+        }
+    }
+    private let dashboardWindow = DashboardWindow()
+    private var dashboardDisplayID: CGDirectDisplayID?
 
     private let fs: BooxFS
     private var session: SecondDisplaySession?
@@ -52,6 +66,7 @@ final class DisplayModel: ObservableObject {
                 if text.hasPrefix("Running") {
                     self.phase = .running
                     self.startWindowRefresh()
+                    self.applyDashboard()
                 }
             }
         }
@@ -75,12 +90,33 @@ final class DisplayModel: ObservableObject {
         self.session = nil
         phase = .idle
         status = "Stopping..."
+        let displayID = session.virtualDisplayID
+        applyDashboard(displayID: nil)
         Task {
             // Bring everything back first; windows left on a display that vanishes can end up off screen.
-            await self.pullBackAll(displayID: session.virtualDisplayID)
+            await self.pullBackAll(displayID: displayID)
             self.stopWindowRefresh()
             await session.stop()
             self.status = "Not running"
+        }
+    }
+
+    // MARK: Dashboard
+
+    private func applyDashboard() {
+        applyDashboard(displayID: session?.virtualDisplayID)
+    }
+
+    /// Shows the dashboard window while the display is running and the switch is on; otherwise removes it.
+    private func applyDashboard(displayID: CGDirectDisplayID?) {
+        if phase == .running, dashboardOn, let displayID {
+            dashboard.start(fs: fs)
+            dashboardWindow.show(model: dashboard, displayID: displayID)
+            dashboardDisplayID = displayID
+        } else {
+            dashboard.stop()
+            dashboardWindow.hide()
+            dashboardDisplayID = nil
         }
     }
 
@@ -105,6 +141,8 @@ final class DisplayModel: ObservableObject {
 
     func refreshWindows() {
         accessibilityTrusted = WindowMover.isTrusted(prompt: false)
+        // The virtual display is recreated when the Boox screen changes size; follow it.
+        if phase == .running, dashboardOn, session?.virtualDisplayID != dashboardDisplayID { applyDashboard() }
         let all = WindowMover.listWindows()
         guard let id = session?.virtualDisplayID else {
             windowsOnMac = all

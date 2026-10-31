@@ -4,7 +4,7 @@ A Mac app for a Boox NoteX connected by USB-C (adb underneath, no Wi-Fi):
 
 - **Files:** browse the Boox, copy files to the Mac and send files to it, with drag and drop.
 - **Mirror:** see the Boox screen on the Mac, with live pen strokes while you draw (landscape).
-- **Display:** use the Boox as a second Mac display over USB (virtual display, the Boox browser as the viewer, nothing installed on the Boox). Needs Screen Recording permission.
+- **Display:** use the Boox as a second Mac display over USB (virtual display, the Boox browser as the viewer, nothing installed on the Boox). Pick which windows go on it, or leave a dashboard (clock, calendar, now playing, system stats) there. Needs Screen Recording and Accessibility permission, and Automation for Spotify/Music.
 
 Tested on a Boox NoteX, firmware 4.1.1, macOS 26.
 
@@ -30,6 +30,13 @@ scripts/build-app.sh      # dist/BooxSync.app, bundles adb if found (brew instal
 scripts/make-dmg.sh       # dist/BooxSync-<version>.dmg
 swift run CoreChecks      # parser and protocol checks; add --live with a Boox connected
 ```
+
+## Keeping permissions across rebuilds (developers)
+macOS ties Screen Recording, Accessibility and Automation grants to the app's code signature, and an ad-hoc signature changes on every build. Run this once to create a local self-signed certificate in your login keychain; `scripts/build-app.sh` then signs with it automatically:
+```bash
+scripts/setup-signing.sh
+```
+After the first signed build you grant the permissions once; later rebuilds keep them. Remove the certificate with `security delete-identity -c "BooxSync Local Signing"`.
 
 ## Other tools
 `scripts/boox-mirror.sh` is the original command-line mirror (needs `brew install ffmpeg`).

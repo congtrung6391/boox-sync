@@ -146,8 +146,9 @@ public struct BooxFS: Sendable {
         for port in [DisplayPage.httpPort, DisplayPage.webSocketPort] {
             try await run(["reverse", "tcp:\(port)", "tcp:\(port)"])
         }
-        // A fresh browser process: old tabs from earlier runs would also reconnect and compete for tiles.
-        _ = try? await run(["shell", "am force-stop org.chromium.chrome"])
+        // Old display tabs from earlier runs would reconnect and compete for tiles, and a browser restart only
+        // makes Chrome restore them, so close them through its DevTools socket instead.
+        await closeDisplayTabs()
         let url = "http://localhost:\(DisplayPage.httpPort)/?t=\(Int(Date().timeIntervalSince1970))"
         try await run(["shell", "am start -a android.intent.action.VIEW -d \(Self.shellQuote(url))"])
     }
@@ -155,6 +156,48 @@ public struct BooxFS: Sendable {
     /// A tap counts as a user gesture, which is what makes the Boox browser hide its toolbars.
     public func tap(x: Int, y: Int) async throws {
         try await run(["shell", "input tap \(x) \(y)"])
+    }
+
+    /// Display tabs currently open in the Boox browser (page ids from Chrome's DevTools endpoint).
+    public func displayTabIDs() async -> [String] {
+        await withDevTools { port in
+            guard let url = URL(string: "http://127.0.0.1:\(port)/json/list"),
+                  let (data, _) = try? await URLSession.shared.data(from: url),
+                  let tabs = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return [] }
+            return tabs.compactMap { tab in
+                guard tab["type"] as? String == "page",
+                      let address = tab["url"] as? String, address.hasPrefix("http://localhost:\(DisplayPage.httpPort)/"),
+                      let id = tab["id"] as? String else { return nil }
+                return id
+            }
+        } ?? []
+    }
+
+    /// Closes every display tab in the Boox browser. Needs Chrome's remote debugging, which is on by default.
+    @discardableResult
+    public func closeDisplayTabs() async -> Int {
+        await withDevTools { port in
+            guard let listURL = URL(string: "http://127.0.0.1:\(port)/json/list"),
+                  let (data, _) = try? await URLSession.shared.data(from: listURL),
+                  let tabs = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return 0 }
+            var closed = 0
+            for tab in tabs {
+                guard tab["type"] as? String == "page",
+                      let address = tab["url"] as? String, address.hasPrefix("http://localhost:\(DisplayPage.httpPort)/"),
+                      let id = tab["id"] as? String, let closeURL = URL(string: "http://127.0.0.1:\(port)/json/close/\(id)") else { continue }
+                if (try? await URLSession.shared.data(from: closeURL)) != nil { closed += 1 }
+            }
+            return closed
+        } ?? 0
+    }
+
+    /// Forwards a free Mac port to Chrome's DevTools socket for the duration of `body`.
+    private func withDevTools<T>(_ body: (Int) async -> T) async -> T? {
+        guard let out = try? await run(["forward", "tcp:0", "localabstract:chrome_devtools_remote"]),
+              let port = Int(out.trimmingCharacters(in: .whitespacesAndNewlines)) else { return nil }
+        let result = await body(port)
+        _ = try? await run(["forward", "--remove", "tcp:\(port)"])
+        return result
     }
 
     public func goHome() async throws {
@@ -165,6 +208,16 @@ public struct BooxFS: Sendable {
         for port in [DisplayPage.httpPort, DisplayPage.webSocketPort] {
             _ = try? await run(["reverse", "--remove", "tcp:\(port)"])
         }
+    }
+
+    /// Battery percentage of the Boox, from `dumpsys battery`.
+    public func batteryLevel() async -> Int? {
+        guard let out = try? await run(["shell", "dumpsys battery"]) else { return nil }
+        for line in out.split(whereSeparator: \.isNewline) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("level:") { return Int(trimmed.dropFirst("level:".count).trimmingCharacters(in: .whitespaces)) }
+        }
+        return nil
     }
 
     public func makeDirectory(_ path: String) async throws {

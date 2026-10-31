@@ -86,6 +86,19 @@ let mid = PenMapping.screenPoint(PenSample(x: 0.25, y: 0.1, touching: true, eras
 check("pen mapping rotates 180 in landscape", mid?.x == 0.75 && mid?.y == 0.9)
 check("pen mapping disabled in portrait", PenMapping.screenPoint(PenSample(x: 0, y: 0, touching: true, erasing: false), frameWidth: 1404, frameHeight: 1872) == nil)
 
+let monitorUnderTest = SystemMonitor()
+_ = monitorUnderTest.sample()
+Thread.sleep(forTimeInterval: 1.2)
+let res = monitorUnderTest.sample()
+check("resources: cpu 0...1 (\(Int(res.cpu * 100))%)", (0...1).contains(res.cpu))
+check("resources: memory used \(res.memoryUsed >> 20) MB of \(res.memoryTotal >> 20) MB", res.memoryUsed > 0 && res.memoryUsed <= res.memoryTotal)
+check("resources: disk \(res.diskUsed >> 30) GB of \(res.diskTotal >> 30) GB", res.diskTotal > 0 && res.diskUsed <= res.diskTotal)
+check("resources: network rates are non-negative (down \(Int(res.networkDown)) B/s)", res.networkDown >= 0 && res.networkUp >= 0)
+print("info battery: \(res.batteryPercent.map(String.init) ?? "none") charging \(res.batteryCharging)")
+let np = NowPlayingProvider.parse("Song\tArtist\tAlbum\tplaying\thttps://x/y.jpg\t215000\t42", source: "Spotify")
+check("now playing parse", np?.title == "Song" && np?.isPlaying == true && np?.duration == 215 && np?.position == 42 && np?.artworkURL != nil)
+check("now playing rejects short", NowPlayingProvider.parse("stopped", source: "Spotify") == nil)
+
 let sampleWindows = WindowMover.listWindows()
 check("window list returns app windows (\(sampleWindows.count))", !sampleWindows.isEmpty)
 for w in sampleWindows.prefix(5) { print("info window \(w.id) \(w.appName) - \(w.title.prefix(40)) \(Int(w.bounds.width))x\(Int(w.bounds.height))") }
@@ -100,14 +113,18 @@ if CommandLine.arguments.contains("--session-test") {
         let monitor = DeviceMonitor()
         await monitor.refresh()
         guard case .connected(let device) = monitor.status, let adb = monitor.adbURL else { print("no device"); exit(1) }
-        let session = SecondDisplaySession(fs: BooxFS(adb: adb, serial: device.serial))
+        let tabFS = BooxFS(adb: adb, serial: device.serial)
+        print("tabs before: \(await tabFS.displayTabIDs().count)")
+        let session = SecondDisplaySession(fs: tabFS)
         session.onStatus = { print("status: \($0)") }
-        session.onStats = { if $0.tilesPerSecond > 0 { print("stats: \($0.tilesPerSecond) tiles, \($0.kilobytesPerSecond) KB in the last second") } }
+        session.onStats = { if $0.tilesPerSecond > 0 { print("stats: \($0.width)x\($0.height) \($0.tilesPerSecond) tiles, \($0.kilobytesPerSecond) KB in the last second") } }
         do {
             try await session.start()
             print("session running; screenshot the Boox now")
+            print("tabs while running: \(await tabFS.displayTabIDs().count)")
             try await Task.sleep(for: .seconds(Double(CommandLine.arguments.last.flatMap(Double.init) ?? 25)))
             await session.stop()
+            print("tabs after stop: \(await tabFS.displayTabIDs().count)")
             print("ok   session test done")
             exit(0)
         } catch {
