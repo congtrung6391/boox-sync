@@ -1,0 +1,8 @@
+.build/
+.swiftpm/
+dist/
+*.xcodeproj
+.DS_Store
+android/*/build/
+*.apk
+*.dmg
