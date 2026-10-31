@@ -37,6 +37,14 @@ final class TransferQueue: ObservableObject {
         self.fs = fs
     }
 
+    /// Fake transfers for the README screenshot.
+    func loadDemoItems() {
+        items = [
+            Item(title: "Meditations.epub", direction: .toBoox, state: .done, bytesDone: 650_000, bytesTotal: 650_000),
+            Item(title: "Lecture slides week 4.pdf", direction: .toBoox, state: .running, bytesDone: 7_900_000, bytesTotal: 12_800_000),
+        ]
+    }
+
     var hasFinished: Bool { items.contains { $0.state != .queued && $0.state != .running } }
 
     func enqueuePush(_ urls: [URL], destination: String) {

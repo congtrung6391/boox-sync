@@ -15,6 +15,7 @@ private final class ModelHolder {
         browser = FileBrowserModel(fs: fs)
         display = DisplayModel(fs: fs)
         serial = fs.serial
+        if Demo.isOn { display?.enterDemo() }
     }
 
     func browser(for fs: BooxFS) -> FileBrowserModel { refresh(for: fs); return browser! }
@@ -31,7 +32,8 @@ struct MainView: View {
     }
 
     @ObservedObject var monitor: DeviceMonitor
-    @State private var tab: Tab = .files
+
+    @State private var tab: Tab = Demo.tab.flatMap { Tab(rawValue: $0.capitalized) } ?? .files
     @State private var holder = ModelHolder()
 
     var body: some View {
@@ -49,6 +51,8 @@ struct MainView: View {
                 }
                 .id("\(device.serial)-\(tab.rawValue)")
                 .toolbar {
+                    // On macOS 26 a lone primary action sits next to the traffic lights; the spacer pushes it to the right.
+                    if #available(macOS 26.0, *) { ToolbarSpacer(.flexible) }
                     ToolbarItem(placement: .primaryAction) {
                         Picker("View", selection: $tab) {
                             ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }

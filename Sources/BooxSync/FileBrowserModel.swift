@@ -21,6 +21,10 @@ final class FileBrowserModel: ObservableObject {
     init(fs: BooxFS) {
         self.fs = fs
         self.transfers = TransferQueue(fs: fs)
+        if Demo.isOn {
+            if let start = Demo.startPath { path = start }
+            transfers.loadDemoItems()
+        }
         transfers.onPushFinished = { [weak self] destination in
             guard let self, destination == self.path else { return }
             Task { await self.load() }
@@ -48,6 +52,11 @@ final class FileBrowserModel: ObservableObject {
     }
 
     func load() async {
+        if Demo.isOn {
+            entries = Demo.entries(in: path)
+            selection = []
+            return
+        }
         isLoading = true
         defer { isLoading = false }
         do {

@@ -24,7 +24,11 @@ struct DashboardTab: View {
                     .frame(width: 320)
             }
         }
-        .onAppear { model.retain(fs: fs) }
+        .onAppear {
+            model.retain(fs: fs)
+            // In demo mode, show the inspector of the to-do component.
+            if Demo.isOn, selection == nil { selection = model.layout.items.first { $0.kind == .todo }?.id }
+        }
         .onDisappear { model.release() }
         .alert("No room for \(noRoom?.title ?? "that")", isPresented: Binding(get: { noRoom != nil }, set: { if !$0 { noRoom = nil } })) {
             Button("OK") { noRoom = nil }

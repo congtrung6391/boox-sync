@@ -6,6 +6,7 @@ struct BooxSyncApp: App {
     @StateObject private var monitor = DeviceMonitor()
 
     init() {
+        if Demo.isOn { NSApplication.shared.appearance = NSAppearance(named: .aqua) }   // light screenshots
         // `BooxSync --render-variants clock out.png` shows every variant of one component, to check them.
         if let flag = CommandLine.arguments.firstIndex(of: "--render-variants"), CommandLine.arguments.count > flag + 2,
            let kind = WidgetKind(rawValue: CommandLine.arguments[flag + 1]) {
@@ -66,8 +67,23 @@ struct BooxSyncApp: App {
     var body: some Scene {
         Window("BooxSync", id: "main") {
             MainView(monitor: monitor)
-                .task { monitor.start() }
+                .task {
+                    if Demo.isOn {
+                        monitor.useDemoDevice()
+                        // Screenshots of an inactive window show grayed-out controls.
+                        try? await Task.sleep(for: .milliseconds(700))
+                        NSApp.activate(ignoringOtherApps: true)
+                        if let window = NSApp.windows.first(where: { $0.isVisible && $0.canBecomeKey }) {
+                            window.setContentSize(NSSize(width: 1180, height: 780))
+                            window.center()
+                            window.makeKeyAndOrderFront(nil)
+                        }
+                    } else {
+                        monitor.start()
+                    }
+                }
         }
+        .defaultSize(width: 1180, height: 800)
         .windowResizability(.contentMinSize)
         .windowToolbarStyle(.unified(showsTitle: false))
 

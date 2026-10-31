@@ -44,6 +44,11 @@ final class MirrorModel: ObservableObject {
     }
 
     func start() {
+        if Demo.isOn {
+            if image == nil { image = Demo.mirrorImage() }
+            status = "Updated just now"
+            return
+        }
         guard task == nil, !isPaused else { return }
         task = Task { await captureLoop() }
         startPen()

@@ -17,13 +17,21 @@ public final class DeviceMonitor: ObservableObject {
 
     private var task: Task<Void, Never>?
     private let interval: Duration
+    private var isDemo = false
 
     public init(interval: Duration = .seconds(2)) {
         self.interval = interval
     }
 
+    /// Pretend a Boox is connected (for screenshots). No adb is run.
+    public func useDemoDevice() {
+        isDemo = true
+        adbURL = URL(fileURLWithPath: "/usr/bin/true")
+        status = .connected(AdbDevice(serial: "DEMO0001", state: .device, model: "NoteX", product: "BOOX", transportId: "1"))
+    }
+
     public func start() {
-        guard task == nil else { return }
+        guard task == nil, !isDemo else { return }
         task = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
