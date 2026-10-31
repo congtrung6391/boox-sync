@@ -68,7 +68,7 @@ Companion docs: DESIGN.md (architecture), SPIKE.md (measurements). Update the St
 | 4.4 | README: install (right-click Open, `xattr`), enabling USB Debug Mode, troubleshooting | 4.2 | a new user can follow it | done (update as features land) |
 | 4.5 | GitHub Actions: build dmg and apk on tag, attach to release | 4.2, 4.3 | tag produces a release | todo |
 | 4.7 | Stable local code signing (`scripts/setup-signing.sh`, build script signs with it): permissions survive rebuilds | 4.2 | designated requirement identical across builds | done |
-| 4.6 | Licence file (Apache-2.0 or MIT) and third-party notices | | present in repo and bundle | todo |
+| 4.6 | Licence file (Apache-2.0 or MIT) and third-party notices | | present in repo and bundle | done: MIT, THIRD_PARTY_NOTICES.md |
 
 ### WS5 Quality and polish (ongoing)
 | ID | Task | Done when | Status |

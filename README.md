@@ -44,5 +44,9 @@ After the first signed build you grant the permissions once; later rebuilds keep
 ## Notes
 - The USB link is USB 2.0: about 35 MB/s for files, about 3 frames per second for the mirror.
 - Bundled adb is Google's Android platform-tools (Apache-2.0); its notice is inside the app.
+- Weather data by [Open-Meteo.com](https://open-meteo.com/) (CC BY 4.0).
+
+## Licence
+MIT, see [LICENSE](LICENSE). Third-party notices, including the bundled adb and the Open-Meteo weather data attribution, are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Docs: DESIGN.md, PLAN.md, SPIKE.md.
