@@ -54,6 +54,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>NSRemindersFullAccessUsageDescription</key><string>BooxSync shows your open reminders in the Boox dashboard to-do widget.</string>
+  <key>NSRemindersUsageDescription</key><string>BooxSync shows your open reminders in the Boox dashboard to-do widget.</string>
   <key>NSAppleEventsUsageDescription</key><string>BooxSync reads the current track from Spotify or Music to show it on the Boox dashboard.</string>
 </dict>
 </plist>

@@ -10,7 +10,10 @@ struct BooxSyncApp: App {
         if let flag = CommandLine.arguments.firstIndex(of: "--render-dashboard"), CommandLine.arguments.count > flag + 1 {
             let path = CommandLine.arguments[flag + 1]
             MainActor.assumeIsolated {
-                let view = DashboardView(model: DashboardModel.sample(), topInset: 37).frame(width: 1872, height: 1302)
+                let model = DashboardModel.sample()
+                // Optional third argument: preset index, to check every layout.
+                if CommandLine.arguments.count > flag + 2, let preset = Int(CommandLine.arguments[flag + 2]) { model.applyPreset(preset) }
+                let view = DashboardView(model: model, topInset: 37).frame(width: 1872, height: 1302)
                 let renderer = ImageRenderer(content: view)
                 renderer.scale = 1
                 if let image = renderer.cgImage,

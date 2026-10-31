@@ -26,6 +26,7 @@ struct MainView: View {
         case files = "Files"
         case mirror = "Mirror"
         case display = "Display"
+        case dashboard = "Dashboard"
         var id: String { rawValue }
     }
 
@@ -41,7 +42,9 @@ struct MainView: View {
                     switch tab {
                     case .files: FileBrowserView(model: holder.browser(for: fs))
                     case .mirror: MirrorView(fs: fs)
-                    case .display: DisplayView(model: holder.display(for: fs))
+                    case .display: DisplayView(model: holder.display(for: fs), openDashboard: { tab = .dashboard })
+                    case .dashboard:
+                        DashboardTab(display: holder.display(for: fs), model: holder.display(for: fs).dashboard, fs: fs)
                     }
                 }
                 .id("\(device.serial)-\(tab.rawValue)")
@@ -60,6 +63,6 @@ struct MainView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
         }
-        .frame(minWidth: 860, minHeight: 520)
+        .frame(minWidth: 1000, minHeight: 620)
     }
 }

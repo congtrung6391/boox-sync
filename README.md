@@ -4,7 +4,7 @@ A Mac app for a Boox NoteX connected by USB-C (adb underneath, no Wi-Fi):
 
 - **Files:** browse the Boox, copy files to the Mac and send files to it, with drag and drop.
 - **Mirror:** see the Boox screen on the Mac, with live pen strokes while you draw (landscape).
-- **Display:** use the Boox as a second Mac display over USB (virtual display, the Boox browser as the viewer, nothing installed on the Boox). Pick which windows go on it, or leave a dashboard (clock, calendar, now playing, system stats) there. Needs Screen Recording and Accessibility permission, and Automation for Spotify/Music.
+- **Display:** use the Boox as a second Mac display over USB (virtual display, the Boox browser as the viewer, nothing installed on the Boox). Pick which windows go on it, or leave a dashboard there. The Dashboard tab is a layout editor with components such as clock, calendar, weather, to-do (local or Reminders), now playing, system stats and notes. Needs Screen Recording and Accessibility permission; Automation for Spotify/Music and Reminders access are optional. Weather uses Open-Meteo and needs internet on the Mac.
 
 Tested on a Boox NoteX, firmware 4.1.1, macOS 26.
 

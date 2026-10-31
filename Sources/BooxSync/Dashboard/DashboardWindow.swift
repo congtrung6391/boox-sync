@@ -26,7 +26,7 @@ final class DashboardWindow {
             created.appearance = NSAppearance(named: .aqua)
             window = created
         }
-        window?.contentView = NSHostingView(rootView: DashboardView(model: model, topInset: topInset))
+        window?.contentView = NSHostingView(rootView: DashboardView(model: model, topInset: topInset / DashboardGeometry.scale(screen.frame.size)))
         window?.setFrame(screen.frame, display: true)
         window?.orderFront(nil)
 

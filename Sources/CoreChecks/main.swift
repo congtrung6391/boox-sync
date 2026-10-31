@@ -99,6 +99,41 @@ let np = NowPlayingProvider.parse("Song\tArtist\tAlbum\tplaying\thttps://x/y.jpg
 check("now playing parse", np?.title == "Song" && np?.isPlaying == true && np?.duration == 215 && np?.position == 42 && np?.artworkURL != nil)
 check("now playing rejects short", NowPlayingProvider.parse("stopped", source: "Spotify") == nil)
 
+let forecastJSON = """
+{"utc_offset_seconds":25200,"current":{"temperature_2m":30.1,"relative_humidity_2m":61,"apparent_temperature":33.4,"is_day":1,"weather_code":3,"wind_speed_10m":9.4},
+ "daily":{"time":["2026-10-31","2026-11-01"],"weather_code":[3,61],"temperature_2m_max":[32.0,29.5],"temperature_2m_min":[24.1,23.0],
+          "precipitation_probability_max":[10,70],"sunrise":["2026-10-31T06:01","2026-11-01T06:02"],"sunset":["2026-10-31T17:25","2026-11-01T17:24"]}}
+"""
+let samplePlace = WeatherPlace(name: "Hanoi", admin: "Hanoi", country: "Vietnam", latitude: 21.03, longitude: 105.85)
+let parsedForecast = try? WeatherService.parseForecast(Data(forecastJSON.utf8), place: samplePlace)
+check("weather parse current", parsedForecast?.temperature == 30.1 && parsedForecast?.humidity == 61 && parsedForecast?.code == 3)
+check("weather parse daily", parsedForecast?.daily.count == 2 && parsedForecast?.daily[1].rainChance == 70 && parsedForecast?.sunrise == "06:01")
+check("weather parse rejects junk", (try? WeatherService.parseForecast(Data("{}".utf8), place: samplePlace)) == nil)
+check("weather describe", WeatherService.describe(code: 61).symbol == "cloud.rain" && WeatherService.describe(code: 0, isDay: false).symbol == "moon.stars")
+check("place display name", samplePlace.displayName == "Hanoi, Vietnam")
+let searchJSON = #"{"results":[{"name":"Hanoi","latitude":21.0,"longitude":105.8,"country":"Vietnam","admin1":"Hanoi"}]}"#
+check("weather search parse", WeatherService.parseSearch(Data(searchJSON.utf8)).first?.country == "Vietnam")
+
+for preset in DashboardLayout.presets {
+    let valid = preset.layout.items.allSatisfy { item in preset.layout.inBounds(item) && !preset.layout.overlaps(item) }
+    check("layout preset \(preset.name) is valid", valid)
+}
+var layoutUnderTest = DashboardLayout(items: [])
+let firstID = layoutUnderTest.add(.clock)
+let secondID = layoutUnderTest.add(.clock)
+check("layout add places widgets without overlap", firstID != nil && secondID != nil
+      && layoutUnderTest.items[0].col == 0 && layoutUnderTest.items[1].col == 4)
+check("layout move onto another widget is refused", firstID.map { !layoutUnderTest.move($0, toCol: 4, row: 0) } ?? false)
+check("layout move out of the grid is refused", firstID.map { !layoutUnderTest.move($0, toCol: 10, row: 0) } ?? false)
+check("layout move to free cell works", firstID.map { layoutUnderTest.move($0, toCol: 0, row: 4) } ?? false)
+check("layout resize below minimum is refused", secondID.map { !layoutUnderTest.resize($0, cols: 1, rows: 1) } ?? false)
+check("layout resize grows into free space", secondID.map { layoutUnderTest.resize($0, cols: 8, rows: 3) } ?? false)
+var crowded = DashboardLayout(items: [])
+for _ in 0..<60 { crowded.add(.cpu) }
+check("layout add stops when the grid is full", crowded.items.count > 0 && crowded.items.count < 60 && crowded.add(.cpu) == nil)
+let encodedLayout = try? JSONEncoder().encode(DashboardLayout.standard)
+check("layout survives JSON round trip", encodedLayout.flatMap { try? JSONDecoder().decode(DashboardLayout.self, from: $0) } == DashboardLayout.standard)
+
 let sampleWindows = WindowMover.listWindows()
 check("window list returns app windows (\(sampleWindows.count))", !sampleWindows.isEmpty)
 for w in sampleWindows.prefix(5) { print("info window \(w.id) \(w.appName) - \(w.title.prefix(40)) \(Int(w.bounds.width))x\(Int(w.bounds.height))") }
@@ -107,6 +142,22 @@ print("info accessibility trusted for this process: \(WindowMover.isTrusted(prom
 let fm = FileManager.default
 let adb = AdbLocator.find(bundleResources: nil, environmentPath: "/nonexistent", fileManager: fm)
 check("locates adb (homebrew or /usr/local)", adb != nil || !fm.isExecutableFile(atPath: "/opt/homebrew/bin/adb"))
+
+if CommandLine.arguments.contains("--weather-test") {
+    Task {
+        do {
+            let found = try await WeatherService.search("Hanoi")
+            print("search found \(found.count): \(found.first?.displayName ?? "-")")
+            guard let place = found.first else { print("FAIL no place"); exit(1) }
+            let report = try await WeatherService.forecast(for: place, fahrenheit: false)
+            print("now \(report.temperature) C, \(WeatherService.describe(code: report.code, isDay: report.isDay).text), \(report.daily.count) days, sunrise \(report.sunrise ?? "-")")
+            print("guessed place: \(await WeatherService.guessPlace()?.displayName ?? "none")")
+            print("ok   weather live test done")
+            exit(0)
+        } catch { print("FAIL \(error)"); exit(1) }
+    }
+    dispatchMain()
+}
 
 if CommandLine.arguments.contains("--session-test") {
     Task { @MainActor in

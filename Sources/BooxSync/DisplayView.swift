@@ -3,6 +3,7 @@ import BooxSyncCore
 
 struct DisplayView: View {
     @ObservedObject var model: DisplayModel
+    var openDashboard: () -> Void = {}
 
     var body: some View {
         if model.phase == .running {
@@ -28,8 +29,6 @@ struct DisplayView: View {
                 VStack(spacing: 8) {
                     Text(message).foregroundStyle(.red).multilineTextAlignment(.center)
                     Button("Open Screen Recording settings") { model.openScreenRecordingSettings() }
-                    Text("If BooxSync is already switched on there, the entry is probably stale from an older build. Run  tccutil reset ScreenCapture dev.booxsync.app  in Terminal, reopen BooxSync and allow it again.")
-                        .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: 520)
             }
@@ -41,7 +40,7 @@ struct DisplayView: View {
             .buttonStyle(.borderedProminent)
             .disabled(model.phase == .starting)
 
-            Text("The Boox opens its browser in fullscreen over USB. Then pick which windows to show on it from this tab. macOS asks for Screen Recording and Accessibility permission.")
+            Text("The Boox opens its browser in fullscreen over USB. Then choose which windows to show on it, or leave the dashboard there. macOS asks for Screen Recording and Accessibility permission.")
                 .font(.caption).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center).frame(maxWidth: 460)
             Spacer()
@@ -54,64 +53,79 @@ struct DisplayView: View {
 
     private var runningView: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Circle().fill(Color.green).frame(width: 10, height: 10)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Boox display is on").font(.headline)
-                    Text("\(model.stats.width) x \(model.stats.height) px  ·  \(model.stats.tilesPerSecond) tiles/s  ·  \(model.stats.kilobytesPerSecond) KB/s")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Toggle("Show pointer", isOn: Binding(get: { model.showsCursor }, set: { model.showsCursor = $0 }))
-                    .help("Draw the Mac mouse pointer on the Boox display")
-                Button("Display settings...") { model.openDisplaySettings() }
-                Button("Stop") { model.stop() }.tint(.red)
-            }
-            .padding(12)
+            statusBar
             Divider()
-
-            DashboardControls(model: model, dashboard: model.dashboard)
-            Divider()
-
             if !model.accessibilityTrusted {
                 accessibilityBanner
                 Divider()
             }
-
-            List {
-                Section {
-                    if model.windowsOnBoox.isEmpty {
-                        Text("No windows on top. The Boox shows the dashboard. Send a window from the list below.")
-                            .foregroundStyle(.secondary)
-                    }
-                    ForEach(Array(model.windowsOnBoox.enumerated()), id: \.element.id) { index, window in
-                        WindowRow(
-                            window: window, actionTitle: "Pull back", symbol: "arrow.uturn.backward",
-                            badge: model.windowsOnBoox.count > 1 && index == 0 ? "On top" : nil,
-                            secondaryTitle: model.windowsOnBoox.count > 1 && index > 0 ? "Bring to top" : nil,
-                            secondaryAction: { model.bringToTop(window) }
-                        ) { model.pullBack(window) }
-                    }
-                } header: {
-                    HStack {
-                        Text("On the Boox (\(model.windowsOnBoox.count))")
-                        Spacer()
-                        if model.windowsOnBoox.count > 1 { Button("Pull back all") { model.pullBackAll() }.buttonStyle(.link) }
-                    }
-                }
-                Section("On this Mac (\(model.windowsOnMac.count))") {
-                    ForEach(model.windowsOnMac) { window in
-                        WindowRow(window: window, actionTitle: "Send to Boox", symbol: "arrow.right.to.line") { model.sendToBoox(window) }
-                    }
-                }
-            }
-            .listStyle(.inset)
+            dashboardRow
+            Divider()
+            windowList
         }
         .alert("Could not move the window", isPresented: Binding(get: { model.windowError != nil }, set: { if !$0 { model.windowError = nil } })) {
             Button("OK") { model.windowError = nil }
         } message: {
             Text(model.windowError ?? "")
         }
+    }
+
+    private var statusBar: some View {
+        HStack(spacing: 12) {
+            Circle().fill(Color.green).frame(width: 10, height: 10)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Boox display is on").font(.headline)
+                Text("\(model.stats.width) x \(model.stats.height) px  ·  \(model.stats.tilesPerSecond) tiles/s  ·  \(model.stats.kilobytesPerSecond) KB/s")
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Toggle("Show pointer", isOn: $model.showsCursor)
+                .help("Draw the Mac mouse pointer on the Boox display")
+            Button("Display settings...") { model.openDisplaySettings() }
+            Button("Stop") { model.stop() }.tint(.red)
+        }
+        .padding(12)
+    }
+
+    private var dashboardRow: some View {
+        HStack(spacing: 12) {
+            Toggle("Dashboard on the Boox", isOn: $model.dashboardOn).toggleStyle(.switch).fixedSize()
+            Text("Shows behind any windows you send.").font(.callout).foregroundStyle(.secondary)
+            Spacer()
+            Button("Edit dashboard...", action: openDashboard)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 10)
+    }
+
+    private var windowList: some View {
+        List {
+            Section {
+                if model.windowsOnBoox.isEmpty {
+                    Text("No windows on top. The Boox shows the dashboard. Send a window from the list below.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(Array(model.windowsOnBoox.enumerated()), id: \.element.id) { index, window in
+                    WindowRow(
+                        window: window, actionTitle: "Pull back", symbol: "arrow.uturn.backward",
+                        badge: model.windowsOnBoox.count > 1 && index == 0 ? "On top" : nil,
+                        secondaryTitle: model.windowsOnBoox.count > 1 && index > 0 ? "Bring to top" : nil,
+                        secondaryAction: { model.bringToTop(window) }
+                    ) { model.pullBack(window) }
+                }
+            } header: {
+                HStack {
+                    Text("On the Boox (\(model.windowsOnBoox.count))")
+                    Spacer()
+                    if model.windowsOnBoox.count > 1 { Button("Pull back all") { model.pullBackAll() }.buttonStyle(.link) }
+                }
+            }
+            Section("On this Mac (\(model.windowsOnMac.count))") {
+                ForEach(model.windowsOnMac) { window in
+                    WindowRow(window: window, actionTitle: "Send to Boox", symbol: "arrow.right.to.line") { model.sendToBoox(window) }
+                }
+            }
+        }
+        .listStyle(.inset)
     }
 
     private var accessibilityBanner: some View {
@@ -138,8 +152,7 @@ private struct WindowRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(nsImage: icon)
-                .resizable().frame(width: 24, height: 24)
+            Image(nsImage: icon).resizable().frame(width: 24, height: 24)
             VStack(alignment: .leading, spacing: 1) {
                 Text(window.appName).font(.body.weight(.medium))
                 if !window.title.isEmpty {
@@ -163,27 +176,5 @@ private struct WindowRow: View {
 
     private var icon: NSImage {
         NSRunningApplication(processIdentifier: window.pid)?.icon ?? NSImage(systemSymbolName: "macwindow", accessibilityDescription: nil)!
-    }
-}
-
-private struct DashboardControls: View {
-    @ObservedObject var model: DisplayModel
-    @ObservedObject var dashboard: DashboardModel
-
-    var body: some View {
-        HStack(spacing: 16) {
-            Toggle("Dashboard on the Boox", isOn: $model.dashboardOn).toggleStyle(.switch).fixedSize()
-            Divider().frame(height: 18)
-            Group {
-                Toggle("Clock", isOn: $dashboard.showClock)
-                Toggle("Calendar", isOn: $dashboard.showCalendar)
-                Toggle("Now playing", isOn: $dashboard.showNowPlaying)
-                Toggle("System", isOn: $dashboard.showResources)
-            }
-            .toggleStyle(.checkbox)
-            .disabled(!model.dashboardOn)
-            Spacer()
-        }
-        .padding(.horizontal, 12).padding(.vertical, 8)
     }
 }

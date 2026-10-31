@@ -39,6 +39,7 @@ final class DisplayModel: ObservableObject {
     }
     private let dashboardWindow = DashboardWindow()
     private var dashboardDisplayID: CGDirectDisplayID?
+    private var dashboardRetained = false
 
     private let fs: BooxFS
     private var session: SecondDisplaySession?
@@ -110,11 +111,11 @@ final class DisplayModel: ObservableObject {
     /// Shows the dashboard window while the display is running and the switch is on; otherwise removes it.
     private func applyDashboard(displayID: CGDirectDisplayID?) {
         if phase == .running, dashboardOn, let displayID {
-            dashboard.start(fs: fs)
+            if !dashboardRetained { dashboard.retain(fs: fs); dashboardRetained = true }
             dashboardWindow.show(model: dashboard, displayID: displayID)
             dashboardDisplayID = displayID
         } else {
-            dashboard.stop()
+            if dashboardRetained { dashboard.release(); dashboardRetained = false }
             dashboardWindow.hide()
             dashboardDisplayID = nil
         }
