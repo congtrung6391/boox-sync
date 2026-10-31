@@ -201,6 +201,10 @@ private struct Inspector: View {
             Spacer()
             Button(role: .destructive) { model.layout.remove(item.id); selection = nil } label: { Label("Remove", systemImage: "trash") }
         }
+        Picker("Style", selection: Binding(get: { item.safeVariant }, set: { model.layout.setVariant(item.id, $0) })) {
+            ForEach(Array(item.kind.variantNames.enumerated()), id: \.offset) { index, name in Text(name).tag(index) }
+        }
+        .pickerStyle(.menu)
         VStack(alignment: .leading, spacing: 8) {
             stepper("Column", value: item.col + 1, range: 1...DashboardLayout.columns) { model.layout.move(item.id, toCol: $0 - 1, row: item.row) }
             stepper("Row", value: item.row + 1, range: 1...DashboardLayout.rows) { model.layout.move(item.id, toCol: item.col, row: $0 - 1) }

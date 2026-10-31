@@ -6,6 +6,26 @@ struct BooxSyncApp: App {
     @StateObject private var monitor = DeviceMonitor()
 
     init() {
+        // `BooxSync --render-variants clock out.png` shows every variant of one component, to check them.
+        if let flag = CommandLine.arguments.firstIndex(of: "--render-variants"), CommandLine.arguments.count > flag + 2,
+           let kind = WidgetKind(rawValue: CommandLine.arguments[flag + 1]) {
+            let path = CommandLine.arguments[flag + 2]
+            MainActor.assumeIsolated {
+                let model = DashboardModel.sample()
+                model.layout = DashboardLayout(items: [])
+                for variant in 0..<kind.variantNames.count {
+                    if let id = model.layout.add(kind) { model.layout.setVariant(id, variant) }
+                }
+                let view = DashboardView(model: model, topInset: 37).frame(width: 1872, height: 1302)
+                let renderer = ImageRenderer(content: view)
+                renderer.scale = 1
+                if let image = renderer.cgImage, let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) {
+                    try? png.write(to: URL(fileURLWithPath: path))
+                    print("rendered \(kind.rawValue) x\(kind.variantNames.count)")
+                }
+            }
+            exit(0)
+        }
         // `BooxSync --render-dashboard out.png` draws the dashboard with sample data and exits, to check the layout.
         if let flag = CommandLine.arguments.firstIndex(of: "--render-dashboard"), CommandLine.arguments.count > flag + 1 {
             let path = CommandLine.arguments[flag + 1]

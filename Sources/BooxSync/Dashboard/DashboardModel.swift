@@ -82,6 +82,7 @@ final class DashboardModel: ObservableObject {
 
     @Published private(set) var resources = ResourceSnapshot()
     @Published private(set) var cpuHistory: [Double] = []
+    @Published private(set) var networkHistory: [Double] = []   // download bytes per second
     @Published private(set) var nowPlaying: NowPlayingStatus = .noPlayer
     @Published private(set) var artwork: NSImage?
     @Published private(set) var booxBattery: Int?
@@ -141,6 +142,8 @@ final class DashboardModel: ObservableObject {
         resources = snapshot
         cpuHistory.append(snapshot.cpu)
         if cpuHistory.count > 60 { cpuHistory.removeFirst(cpuHistory.count - 60) }
+        networkHistory.append(snapshot.networkDown)
+        if networkHistory.count > 60 { networkHistory.removeFirst(networkHistory.count - 60) }
     }
 
     private func refreshBoxBattery() async {
@@ -238,6 +241,10 @@ final class DashboardModel: ObservableObject {
             let slow = 0.2 * sin(x / 5)
             let fast = 0.1 * cos(x / 2)
             return 0.25 + slow + fast
+        }
+        model.networkHistory = (0..<60).map { (index: Int) -> Double in
+            let x = Double(index)
+            return 400_000 + 300_000 * sin(x / 4) + 200_000 * cos(x / 1.5)
         }
         model.booxBattery = 64
         model.nowPlaying = .playing(NowPlaying(

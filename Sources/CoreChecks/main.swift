@@ -131,6 +131,18 @@ check("layout resize grows into free space", secondID.map { layoutUnderTest.resi
 var crowded = DashboardLayout(items: [])
 for _ in 0..<60 { crowded.add(.cpu) }
 check("layout add stops when the grid is full", crowded.items.count > 0 && crowded.items.count < 60 && crowded.add(.cpu) == nil)
+check("every kind has at least one variant", WidgetKind.allCases.allSatisfy { !$0.variantNames.isEmpty })
+let legacyJSON = #"{"items":[{"id":"5B2C2D6A-1111-4222-8333-444455556666","kind":"clock","col":0,"row":0,"cols":4,"rows":2,"text":""}],"outlines":true}"#
+let legacy = try? JSONDecoder().decode(DashboardLayout.self, from: Data(legacyJSON.utf8))
+check("layout saved before variants still loads as variant 0", legacy?.items.first?.variant == 0 && legacy?.items.count == 1)
+var variantLayout = DashboardLayout.standard
+if let clockID = variantLayout.items.first(where: { $0.kind == .clock })?.id {
+    variantLayout.setVariant(clockID, 2)
+    check("set variant", variantLayout.items.first { $0.id == clockID }?.variant == 2)
+    variantLayout.setVariant(clockID, 99)
+    check("set variant clamps to the last one", variantLayout.items.first { $0.id == clockID }?.variant == WidgetKind.clock.variantNames.count - 1)
+}
+check("safeVariant clamps stale values", WidgetItem(kind: .clock, col: 0, row: 0, cols: 4, rows: 2, variant: 50).safeVariant == 3)
 let encodedLayout = try? JSONEncoder().encode(DashboardLayout.standard)
 check("layout survives JSON round trip", encodedLayout.flatMap { try? JSONDecoder().decode(DashboardLayout.self, from: $0) } == DashboardLayout.standard)
 

@@ -20,6 +20,23 @@ public enum WidgetKind: String, Codable, CaseIterable, Sendable {
         }
     }
 
+    /// Alternative looks for the component. The first one is the default.
+    public var variantNames: [String] {
+        switch self {
+        case .clock: ["Digital", "Time only", "Analog", "12-hour"]
+        case .date: ["Big day", "One line", "Week and day"]
+        case .calendar: ["Month", "Week strip", "Two weeks"]
+        case .weather: ["Current and forecast", "Current only", "Forecast only", "Compact"]
+        case .todo: ["Checklist", "Compact", "Focus"]
+        case .nowPlaying: ["Artwork and text", "Artwork only", "Text only"]
+        case .cpu: ["Bar and history", "Ring", "Big number"]
+        case .memory, .disk: ["Bar", "Ring", "Big number"]
+        case .network: ["Rates", "Rates and graph", "Compact"]
+        case .battery: ["Bars", "Rings", "Compact"]
+        case .note: ["Normal", "Large", "Quote"]
+        }
+    }
+
     /// SF Symbol for the palette.
     public var symbol: String {
         switch self {
@@ -77,15 +94,34 @@ public struct WidgetItem: Codable, Identifiable, Equatable, Sendable {
     public var rows: Int
     /// Used by the note widget.
     public var text = ""
+    /// Index into `kind.variantNames`.
+    public var variant = 0
 
-    public init(kind: WidgetKind, col: Int, row: Int, cols: Int, rows: Int, text: String = "") {
+    public init(kind: WidgetKind, col: Int, row: Int, cols: Int, rows: Int, text: String = "", variant: Int = 0) {
         self.kind = kind
         self.col = col
         self.row = row
         self.cols = cols
         self.rows = rows
         self.text = text
+        self.variant = variant
     }
+
+    // Layouts saved before variants existed have no "variant" key; they decode as variant 0.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        kind = try c.decode(WidgetKind.self, forKey: .kind)
+        col = try c.decode(Int.self, forKey: .col)
+        row = try c.decode(Int.self, forKey: .row)
+        cols = try c.decode(Int.self, forKey: .cols)
+        rows = try c.decode(Int.self, forKey: .rows)
+        text = try c.decodeIfPresent(String.self, forKey: .text) ?? ""
+        variant = try c.decodeIfPresent(Int.self, forKey: .variant) ?? 0
+    }
+
+    /// The variant clamped to what the kind offers, so a stale value can never index out of range.
+    public var safeVariant: Int { min(max(0, variant), kind.variantNames.count - 1) }
 }
 
 /// Widgets placed on a 12 x 8 grid that covers the Boox display. Edits that would overlap or leave the grid are refused.
@@ -160,6 +196,11 @@ public struct DashboardLayout: Codable, Equatable, Sendable {
         return true
     }
 
+    public mutating func setVariant(_ id: UUID, _ variant: Int) {
+        guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+        items[index].variant = min(max(0, variant), items[index].kind.variantNames.count - 1)
+    }
+
     public mutating func remove(_ id: UUID) {
         items.removeAll { $0.id == id }
     }
@@ -168,29 +209,30 @@ public struct DashboardLayout: Codable, Equatable, Sendable {
 
     public static let presets: [(name: String, layout: DashboardLayout)] = [
         ("Desk", make([
-            (.clock, 0, 0, 4, 2), (.calendar, 0, 2, 4, 6), (.weather, 4, 0, 8, 2),
-            (.todo, 4, 2, 4, 4), (.nowPlaying, 8, 2, 4, 4),
-            (.cpu, 4, 6, 3, 2), (.memory, 7, 6, 3, 2), (.battery, 10, 6, 2, 2),
+            (.clock, 0, 0, 4, 2, 0), (.calendar, 0, 2, 4, 6, 0), (.weather, 4, 0, 8, 2, 0),
+            (.todo, 4, 2, 4, 4, 0), (.nowPlaying, 8, 2, 4, 4, 0),
+            (.cpu, 4, 6, 3, 2, 0), (.memory, 7, 6, 3, 2, 0), (.battery, 10, 6, 2, 2, 0),
         ])),
         ("Calm", make([
-            (.date, 0, 0, 4, 4), (.clock, 4, 0, 8, 4), (.calendar, 0, 4, 5, 4), (.weather, 5, 4, 7, 4),
+            (.date, 0, 0, 4, 4, 0), (.clock, 4, 0, 8, 4, 1), (.calendar, 0, 4, 5, 4, 0), (.weather, 5, 4, 7, 4, 0),
         ])),
         ("Focus", make([
-            (.todo, 0, 0, 6, 8), (.clock, 6, 0, 6, 2), (.weather, 6, 2, 6, 2), (.calendar, 6, 4, 6, 4),
+            (.todo, 0, 0, 6, 8, 0), (.clock, 6, 0, 6, 2, 3), (.weather, 6, 2, 6, 2, 3), (.calendar, 6, 4, 6, 4, 2),
         ])),
         ("Music", make([
-            (.nowPlaying, 0, 0, 12, 5), (.clock, 0, 5, 4, 3), (.weather, 4, 5, 8, 3),
+            (.nowPlaying, 0, 0, 12, 5, 0), (.clock, 0, 5, 4, 3, 0), (.weather, 4, 5, 8, 3, 0),
         ])),
         ("Monitor", make([
-            (.cpu, 0, 0, 6, 3), (.memory, 6, 0, 3, 3), (.disk, 9, 0, 3, 3), (.network, 0, 3, 6, 2),
-            (.battery, 6, 3, 6, 2), (.clock, 0, 5, 4, 3), (.weather, 4, 5, 8, 3),
+            (.cpu, 0, 0, 6, 3, 0), (.memory, 6, 0, 3, 3, 1), (.disk, 9, 0, 3, 3, 1), (.network, 0, 3, 6, 2, 1),
+            (.battery, 6, 3, 6, 2, 0), (.clock, 0, 5, 4, 3, 0), (.weather, 4, 5, 8, 3, 0),
         ])),
-        ("Clock only", make([(.clock, 0, 0, 12, 8)])),
+        ("Clock only", make([(.clock, 0, 0, 12, 8, 0)])),
+        ("Analog", make([(.clock, 0, 0, 6, 8, 2), (.calendar, 6, 0, 6, 4, 1), (.weather, 6, 4, 6, 4, 3)])),
     ]
 
     public static var standard: DashboardLayout { presets[0].layout }
 
-    private static func make(_ cells: [(WidgetKind, Int, Int, Int, Int)]) -> DashboardLayout {
-        DashboardLayout(items: cells.map { WidgetItem(kind: $0.0, col: $0.1, row: $0.2, cols: $0.3, rows: $0.4) })
+    private static func make(_ cells: [(WidgetKind, Int, Int, Int, Int, Int)]) -> DashboardLayout {
+        DashboardLayout(items: cells.map { WidgetItem(kind: $0.0, col: $0.1, row: $0.2, cols: $0.3, rows: $0.4, variant: $0.5) })
     }
 }
