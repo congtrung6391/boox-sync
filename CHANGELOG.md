@@ -6,6 +6,26 @@ made. The 0.1.0 section below was written by hand for the first release.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-10-31
+
+### Features
+
+- add demo mode for screenshots and fix toolbar tab placement on macOS 26 ([eaaab93](https://github.com/congtrung6391/boox-sync/commit/eaaab9341dcdc146dae88cd48d1fe3d47afa3cba))
+
+### Bug fixes
+
+- reopen the main window from the menu bar or by relaunching the app ([cfa1c0b](https://github.com/congtrung6391/boox-sync/commit/cfa1c0b7b0e91e60f3043cd3c2a26fc35b6724cb))
+
+### Reverts
+
+- remove the demo mode and screenshot script ([b45f077](https://github.com/congtrung6391/boox-sync/commit/b45f0771cc12f880b21326de0b47ced719a33628))
+
+### Documentation
+
+- remove the dashboard screenshot ([701283a](https://github.com/congtrung6391/boox-sync/commit/701283a68cd3526a4062b5c0f4b44e8ef2ef5596))
+- add screenshots to the README ([458d799](https://github.com/congtrung6391/boox-sync/commit/458d79963c88dfbbdf4d64b661fdde69929f4742))
+- write the README for end users and move developer instructions to docs/DEVELOPMENT.md ([4c2d91f](https://github.com/congtrung6391/boox-sync/commit/4c2d91f3ff6f35478f4bc663dc28fac69409efc0))
+
 ## [1.1.0] - 2026-10-31
 
 ### Features
