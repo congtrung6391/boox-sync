@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.png" width="128" alt="BooxSync logo"></p>
+
 # BooxSync
 
 A Mac app for a Boox NoteX connected by USB-C (adb underneath, no Wi-Fi):
@@ -29,6 +31,7 @@ Needs Swift 6 (Command Line Tools are enough, no Xcode).
 scripts/build-app.sh      # dist/BooxSync.app, bundles adb if found (brew install android-platform-tools)
 scripts/make-dmg.sh       # dist/BooxSync-<version>.dmg
 swift run CoreChecks      # parser and protocol checks; add --live with a Boox connected
+swift scripts/make-icon.swift   # regenerates Resources/AppIcon.icns and assets/logo.png
 ```
 
 ## Keeping permissions across rebuilds (developers)
