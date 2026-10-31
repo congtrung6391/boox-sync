@@ -215,9 +215,10 @@ final class DashboardModel: ObservableObject {
 
     func applyPreset(_ index: Int) {
         guard DashboardLayout.presets.indices.contains(index) else { return }
-        let outlines = layout.outlines
+        let outlines = layout.outlines, dark = layout.dark
         layout = DashboardLayout.presets[index].layout
         layout.outlines = outlines
+        layout.dark = dark
     }
 
     func setNote(_ id: UUID, text: String) {

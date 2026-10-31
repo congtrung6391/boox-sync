@@ -32,6 +32,26 @@ enum DashboardGeometry {
     }
 }
 
+/// Foreground and background of the dashboard. Light is black on white; dark is white on black.
+struct DashTheme {
+    let fg: Color
+    let bg: Color
+
+    static let light = DashTheme(fg: .black, bg: .white)
+    static let dark = DashTheme(fg: .white, bg: .black)
+}
+
+private struct DashThemeKey: EnvironmentKey {
+    static let defaultValue = DashTheme.light
+}
+
+extension EnvironmentValues {
+    var dashTheme: DashTheme {
+        get { self[DashThemeKey.self] }
+        set { self[DashThemeKey.self] = newValue }
+    }
+}
+
 /// Designed for e-ink: black on white, thick outlines, large type, no animation, minute-level updates.
 struct DashboardView: View {
     @ObservedObject var model: DashboardModel
@@ -39,13 +59,14 @@ struct DashboardView: View {
     var topInset: CGFloat = 37
 
     var body: some View {
-        GeometryReader { geo in
+        let theme = model.layout.dark ? DashTheme.dark : DashTheme.light
+        return GeometryReader { geo in
             ZStack(alignment: .topLeading) {
-                Color.white
+                theme.bg
                 if model.layout.items.isEmpty {
                     Text("Empty dashboard. Add components in the Dashboard tab.")
                         .font(.system(size: 40 * DashboardGeometry.scale(geo.size), weight: .semibold))
-                        .foregroundStyle(Color.black)
+                        .foregroundStyle(theme.fg)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 ForEach(model.layout.items) { item in
@@ -57,6 +78,7 @@ struct DashboardView: View {
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
-        .environment(\.colorScheme, .light)
+        .environment(\.dashTheme, theme)
+        .environment(\.colorScheme, model.layout.dark ? .dark : .light)
     }
 }

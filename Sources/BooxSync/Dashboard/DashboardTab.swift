@@ -50,6 +50,7 @@ struct DashboardTab: View {
             }
             .fixedSize()
             Toggle("Outlines", isOn: $model.layout.outlines).toggleStyle(.checkbox)
+            Toggle("Dark theme", isOn: $model.layout.dark).toggleStyle(.checkbox)
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
     }

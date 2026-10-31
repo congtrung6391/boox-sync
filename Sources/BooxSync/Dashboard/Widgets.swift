@@ -55,6 +55,7 @@ private func unit(_ size: CGSize, reference: CGSize) -> CGFloat {
 }
 
 private struct Card<Content: View>: View {
+    @Environment(\.dashTheme) private var theme
     let title: String?
     let u: CGFloat
     let outlines: Bool
@@ -69,9 +70,9 @@ private struct Card<Content: View>: View {
         }
         .padding(outlines ? 22 * u : 6 * u)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .foregroundStyle(Color.black)
+        .foregroundStyle(theme.fg)
         .overlay {
-            if outlines { RoundedRectangle(cornerRadius: 20 * u).stroke(Color.black, lineWidth: max(2, 3 * u)) }
+            if outlines { RoundedRectangle(cornerRadius: 20 * u).stroke(theme.fg, lineWidth: max(2, 3 * u)) }
         }
     }
 }
@@ -79,14 +80,15 @@ private struct Card<Content: View>: View {
 private func inset(_ u: CGFloat, _ outlines: Bool) -> CGFloat { (outlines ? 22 : 6) * u }
 
 private struct Bar: View {
+    @Environment(\.dashTheme) private var theme
     let fraction: Double
     let u: CGFloat
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 8 * u).stroke(Color.black, lineWidth: max(2, 3 * u))
-                RoundedRectangle(cornerRadius: 5 * u).fill(Color.black)
+                RoundedRectangle(cornerRadius: 8 * u).stroke(theme.fg, lineWidth: max(2, 3 * u))
+                RoundedRectangle(cornerRadius: 5 * u).fill(theme.fg)
                     .frame(width: max(0, (geo.size.width - 10 * u) * min(1, max(0, fraction))))
                     .padding(5 * u)
             }
@@ -96,6 +98,7 @@ private struct Bar: View {
 }
 
 private struct Sparkline: View {
+    @Environment(\.dashTheme) private var theme
     let values: [Double]
     let u: CGFloat
 
@@ -108,14 +111,15 @@ private struct Sparkline: View {
                                     y: size.height * (1 - CGFloat(min(1, max(0, value)))))
                 index == 0 ? path.move(to: point) : path.addLine(to: point)
             }
-            context.stroke(path, with: .color(.black), style: StrokeStyle(lineWidth: max(2, 3 * u), lineJoin: .round))
+            context.stroke(path, with: .color(theme.fg), style: StrokeStyle(lineWidth: max(2, 3 * u), lineJoin: .round))
         }
-        .overlay(alignment: .bottom) { Rectangle().fill(Color.black).frame(height: max(1.5, 2 * u)) }
+        .overlay(alignment: .bottom) { Rectangle().fill(theme.fg).frame(height: max(1.5, 2 * u)) }
     }
 }
 
 /// A thick ring with the value in the middle, for the "Ring" variants.
 private struct RingGauge: View {
+    @Environment(\.dashTheme) private var theme
     let fraction: Double
     let diameter: CGFloat
     let text: String
@@ -123,9 +127,9 @@ private struct RingGauge: View {
     var body: some View {
         let line = diameter * 0.11
         ZStack {
-            Circle().stroke(Color.black.opacity(0.14), lineWidth: line)
+            Circle().stroke(theme.fg.opacity(0.14), lineWidth: line)
             Circle().trim(from: 0, to: min(1, max(0.005, fraction)))
-                .stroke(Color.black, style: StrokeStyle(lineWidth: line, lineCap: .butt))
+                .stroke(theme.fg, style: StrokeStyle(lineWidth: line, lineCap: .butt))
                 .rotationEffect(.degrees(-90))
             Text(text).font(.system(size: diameter * 0.26, weight: .heavy)).monospacedDigit().minimumScaleFactor(0.5).lineLimit(1)
         }
@@ -195,6 +199,7 @@ private struct ClockWidget: View {
 }
 
 private struct AnalogFace: View {
+    @Environment(\.dashTheme) private var theme
     let date: Date
 
     var body: some View {
@@ -203,7 +208,7 @@ private struct AnalogFace: View {
             let radius = min(size.width, size.height) / 2 - 4
             let weight = max(3, radius * 0.03)
             context.stroke(Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)),
-                           with: .color(.black), lineWidth: weight)
+                           with: .color(theme.fg), lineWidth: weight)
             func point(_ angle: Double, _ length: CGFloat) -> CGPoint {
                 CGPoint(x: center.x + CoreGraphics.sin(angle) * length, y: center.y - CoreGraphics.cos(angle) * length)
             }
@@ -212,7 +217,7 @@ private struct AnalogFace: View {
                 var path = Path()
                 path.move(to: point(angle, radius * (tick % 3 == 0 ? 0.80 : 0.88)))
                 path.addLine(to: point(angle, radius * 0.95))
-                context.stroke(path, with: .color(.black), style: StrokeStyle(lineWidth: tick % 3 == 0 ? weight * 2 : weight, lineCap: .round))
+                context.stroke(path, with: .color(theme.fg), style: StrokeStyle(lineWidth: tick % 3 == 0 ? weight * 2 : weight, lineCap: .round))
             }
             let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
             let minutes = Double(parts.minute ?? 0)
@@ -221,9 +226,9 @@ private struct AnalogFace: View {
                 var hand = Path()
                 hand.move(to: center)
                 hand.addLine(to: point(angle, radius * length))
-                context.stroke(hand, with: .color(.black), style: StrokeStyle(lineWidth: width, lineCap: .round))
+                context.stroke(hand, with: .color(theme.fg), style: StrokeStyle(lineWidth: width, lineCap: .round))
             }
-            context.fill(Path(ellipseIn: CGRect(x: center.x - weight * 2.2, y: center.y - weight * 2.2, width: weight * 4.4, height: weight * 4.4)), with: .color(.black))
+            context.fill(Path(ellipseIn: CGRect(x: center.x - weight * 2.2, y: center.y - weight * 2.2, width: weight * 4.4, height: weight * 4.4)), with: .color(theme.fg))
         }
     }
 }
@@ -283,6 +288,7 @@ private struct DateWidget: View {
 // MARK: Calendar
 
 private struct DayCell: View {
+    @Environment(\.dashTheme) private var theme
     let day: Date
     let today: Date
     let cell: CGFloat
@@ -292,9 +298,9 @@ private struct DayCell: View {
         let isToday = calendar.isDate(day, inSameDayAs: today)
         Text("\(calendar.component(.day, from: day))")
             .font(.system(size: cell * 0.5, weight: isToday ? .heavy : .medium))
-            .foregroundStyle(isToday ? Color.white : Color.black)
+            .foregroundStyle(isToday ? theme.bg : theme.fg)
             .frame(width: cell * 0.86, height: cell * 0.86)
-            .background(Circle().fill(isToday ? Color.black : Color.clear))
+            .background(Circle().fill(isToday ? theme.fg : Color.clear))
             .frame(width: cell, height: cell)
     }
 }
@@ -408,6 +414,7 @@ private struct CalendarWidget: View {
 // MARK: Weather
 
 private struct WeatherWidget: View {
+    @Environment(\.dashTheme) private var theme
     @ObservedObject var model: DashboardModel
     let size: CGSize
     let outlines: Bool
@@ -485,7 +492,7 @@ private struct WeatherWidget: View {
                     }
                 }
                 if dayCount > 0 {
-                    Rectangle().fill(Color.black).frame(width: max(2, 2 * u))
+                    Rectangle().fill(theme.fg).frame(width: max(2, 2 * u))
                     HStack(spacing: 0) {
                         ForEach(Array(report.daily.prefix(dayCount).enumerated()), id: \.offset) { _, day in dayColumn(day, u: u, scale: 1) }
                     }
@@ -598,6 +605,7 @@ private struct TodoWidget: View {
 // MARK: Now playing
 
 private struct NowPlayingWidget: View {
+    @Environment(\.dashTheme) private var theme
     @ObservedObject var model: DashboardModel
     let size: CGSize
     let outlines: Bool
@@ -676,9 +684,9 @@ private struct NowPlayingWidget: View {
             Image(nsImage: image).resizable().interpolation(.high).aspectRatio(contentMode: .fill)
                 .grayscale(1).contrast(1.2)
                 .clipShape(RoundedRectangle(cornerRadius: 10 * u))
-                .overlay(RoundedRectangle(cornerRadius: 10 * u).stroke(Color.black, lineWidth: max(2, 3 * u)))
+                .overlay(RoundedRectangle(cornerRadius: 10 * u).stroke(theme.fg, lineWidth: max(2, 3 * u)))
         } else {
-            RoundedRectangle(cornerRadius: 10 * u).stroke(Color.black, lineWidth: max(2, 3 * u))
+            RoundedRectangle(cornerRadius: 10 * u).stroke(theme.fg, lineWidth: max(2, 3 * u))
                 .overlay(Image(systemName: "music.note").font(.system(size: 70 * u)))
         }
     }

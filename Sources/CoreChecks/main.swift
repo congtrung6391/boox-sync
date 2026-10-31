@@ -135,6 +135,14 @@ check("every kind has at least one variant", WidgetKind.allCases.allSatisfy { !$
 let legacyJSON = #"{"items":[{"id":"5B2C2D6A-1111-4222-8333-444455556666","kind":"clock","col":0,"row":0,"cols":4,"rows":2,"text":""}],"outlines":true}"#
 let legacy = try? JSONDecoder().decode(DashboardLayout.self, from: Data(legacyJSON.utf8))
 check("layout saved before variants still loads as variant 0", legacy?.items.first?.variant == 0 && legacy?.items.count == 1)
+check("layout saved before the dark setting loads as light", legacy.map { !$0.dark && $0.outlines } ?? false)
+var darkLayout = DashboardLayout.standard
+darkLayout.dark = true
+let darkRoundTrip = (try? JSONEncoder().encode(darkLayout)).flatMap { try? JSONDecoder().decode(DashboardLayout.self, from: $0) }
+check("dark layout survives JSON round trip", darkRoundTrip?.dark == true && darkRoundTrip == darkLayout)
+let outlinesOffJSON = #"{"items":[],"outlines":false}"#
+check("outlines setting survives without a dark key",
+      (try? JSONDecoder().decode(DashboardLayout.self, from: Data(outlinesOffJSON.utf8))).map { !$0.outlines && !$0.dark } ?? false)
 var variantLayout = DashboardLayout.standard
 if let clockID = variantLayout.items.first(where: { $0.kind == .clock })?.id {
     variantLayout.setVariant(clockID, 2)

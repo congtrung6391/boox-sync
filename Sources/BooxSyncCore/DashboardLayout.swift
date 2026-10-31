@@ -131,10 +131,21 @@ public struct DashboardLayout: Codable, Equatable, Sendable {
 
     public var items: [WidgetItem]
     public var outlines = true
+    /// White on black instead of black on white.
+    public var dark = false
 
-    public init(items: [WidgetItem], outlines: Bool = true) {
+    public init(items: [WidgetItem], outlines: Bool = true, dark: Bool = false) {
         self.items = items
         self.outlines = outlines
+        self.dark = dark
+    }
+
+    // Layouts saved before a setting existed lack its key; they decode with the default.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        items = try c.decode([WidgetItem].self, forKey: .items)
+        outlines = try c.decodeIfPresent(Bool.self, forKey: .outlines) ?? true
+        dark = try c.decodeIfPresent(Bool.self, forKey: .dark) ?? false
     }
 
     public func kinds() -> Set<WidgetKind> { Set(items.map(\.kind)) }

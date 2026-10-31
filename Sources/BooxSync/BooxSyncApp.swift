@@ -33,15 +33,30 @@ struct BooxSyncApp: App {
                 let model = DashboardModel.sample()
                 // Optional third argument: preset index, to check every layout.
                 if CommandLine.arguments.count > flag + 2, let preset = Int(CommandLine.arguments[flag + 2]) { model.applyPreset(preset) }
+                if CommandLine.arguments.contains("dark") { model.layout.dark = true }
                 let view = DashboardView(model: model, topInset: 37).frame(width: 1872, height: 1302)
-                let renderer = ImageRenderer(content: view)
-                renderer.scale = 1
-                if let image = renderer.cgImage,
-                   let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) {
-                    try? png.write(to: URL(fileURLWithPath: path))
-                    print("rendered \(path)")
+                if CommandLine.arguments.contains("appkit") {
+                    // Render through a real AppKit hosting view, like the dashboard window does.
+                    let host = NSHostingView(rootView: view)
+                    host.frame = NSRect(x: 0, y: 0, width: 1872, height: 1302)
+                    let window = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+                    window.contentView = host
+                    host.layoutSubtreeIfNeeded()
+                    if let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) {
+                        host.cacheDisplay(in: host.bounds, to: rep)
+                        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path))
+                        print("rendered (appkit) \(path)")
+                    }
                 } else {
-                    print("render failed")
+                    let renderer = ImageRenderer(content: view)
+                    renderer.scale = 1
+                    if let image = renderer.cgImage,
+                       let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) {
+                        try? png.write(to: URL(fileURLWithPath: path))
+                        print("rendered \(path)")
+                    } else {
+                        print("render failed")
+                    }
                 }
             }
             exit(0)
