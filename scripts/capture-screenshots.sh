@@ -57,7 +57,7 @@ shot() {   # name, demo tab, extra args...
 
 shot files files --demo-path /sdcard/Books
 shot display display
-# mirror.png and dashboard.png are real captures of the app (they show a live Boox), taken by hand.
+# mirror.png is a real capture of the app (it shows a live Boox), taken by hand.
 
 # What the Boox shows: the dashboard rendered with sample data (no window or permission needed).
 "$APP" --render-dashboard "$OUT/boox-dashboard-light.png" 0 -AppleLanguages "(en)" -AppleLocale en_US >/dev/null

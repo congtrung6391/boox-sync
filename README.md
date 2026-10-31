@@ -20,7 +20,6 @@ Tested on a Boox NoteX (firmware 4.1.1) with macOS 26. Other Boox models may wor
   </tr>
   <tr>
     <td align="center"><img src="assets/screenshots/display.png" width="440" alt="The Display tab listing windows on the Boox and on the Mac"><br><b>Second display</b>: send windows to the Boox and back</td>
-    <td align="center"><img src="assets/screenshots/dashboard.png" width="440" alt="The Dashboard editor"><br><b>Dashboard</b>: design what the Boox shows</td>
   </tr>
 </table>
 
