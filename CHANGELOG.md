@@ -6,6 +6,10 @@ made. The 0.1.0 section below was written by hand for the first release.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-10-31
+
+No user-facing changes.
+
 ## [0.1.0] - 2026-10-31
 
 First release.
