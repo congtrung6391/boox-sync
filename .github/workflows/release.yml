@@ -178,6 +178,7 @@ jobs:
         env:
           BOOXSYNC_VERSION: ${{ needs.plan.outputs.version }}
           BOOXSYNC_BUILD: ${{ github.run_number }}
+          BOOXSYNC_CHANNEL: release   # bundle id dev.booxsync.app; local builds use dev.booxsync.app.dev
         run: scripts/make-dmg.sh
 
       - name: Verify the app
@@ -189,6 +190,9 @@ jobs:
           BUILT="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" dist/BooxSync.app/Contents/Info.plist)"
           echo "App version: $BUILT"
           test "$BUILT" = "$VERSION"
+          BUNDLE_ID="$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" dist/BooxSync.app/Contents/Info.plist)"
+          echo "Bundle id: $BUNDLE_ID"
+          test "$BUNDLE_ID" = "dev.booxsync.app"
           ls -lh dist/*.dmg
 
       - name: Checksum

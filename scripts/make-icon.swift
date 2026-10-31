@@ -1,7 +1,8 @@
 #!/usr/bin/env swift
 // Draws the BooxSync app icon: a Mac display with a Boox tablet in front showing a page ("the Boox as a second
 // display"). Writes:
-//   Resources/AppIcon.icns   (used by scripts/build-app.sh)
+//   Resources/AppIcon.icns      (release build, used by scripts/build-app.sh)
+//   Resources/AppIcon-dev.icns  (local dev builds: the same icon with an amber DEV badge)
 //   assets/logo.png          (1024 px, for the README)
 // Run from the repository root:  swift scripts/make-icon.swift [palette]
 //   palette: graphite (default), indigo, coral, forest
@@ -44,7 +45,7 @@ func round(_ c: CGContext, _ r: CGRect, _ radius: CGFloat, _ fill: CGColor) {
 }
 
 /// Draws on a 1024 x 1024 canvas.
-func draw(in c: CGContext, palette: Palette) {
+func draw(in c: CGContext, palette: Palette, dev: Bool = false) {
     // Icon tile: 824 pt rounded square with the usual margin, gradient, soft shadow.
     let rect = CGRect(x: 100, y: 100, width: 824, height: 824)
     let body = CGPath(roundedRect: rect, cornerWidth: 186, cornerHeight: 186, transform: nil)
@@ -95,9 +96,21 @@ func draw(in c: CGContext, palette: Palette) {
     }
 
     c.restoreGState()
+
+    // Local builds get an amber "DEV" badge so they can be told apart from the release in the Dock and in Privacy settings.
+    if dev {
+        let badge = CGRect(x: 150, y: 138, width: 276, height: 116)
+        round(c, badge.insetBy(dx: -8, dy: -8), 64, CGColor(gray: 0, alpha: 0.35))
+        round(c, badge, 58, rgb(255, 184, 0))
+        let text = NSAttributedString(string: "DEV", attributes: [
+            .font: NSFont.systemFont(ofSize: 86, weight: .heavy), .foregroundColor: NSColor(cgColor: ink)!, .kern: 3,
+        ])
+        let size = text.size()
+        text.draw(at: CGPoint(x: badge.midX - size.width / 2, y: badge.midY - size.height / 2))
+    }
 }
 
-func render(size: Int, palette: Palette) -> NSBitmapImageRep {
+func render(size: Int, palette: Palette, dev: Bool = false) -> NSBitmapImageRep {
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size, bitsPerSample: 8, samplesPerPixel: 4,
                                hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
     NSGraphicsContext.saveGraphicsState()
@@ -106,7 +119,7 @@ func render(size: Int, palette: Palette) -> NSBitmapImageRep {
     let context = graphics.cgContext
     context.interpolationQuality = .high
     context.scaleBy(x: CGFloat(size) / 1024, y: CGFloat(size) / 1024)
-    draw(in: context, palette: palette)
+    draw(in: context, palette: palette, dev: dev)
     NSGraphicsContext.restoreGraphicsState()
     return rep
 }
@@ -142,22 +155,30 @@ if let flag = arguments.firstIndex(of: "--sheet"), arguments.count > flag + 1 {
 }
 
 let chosen = palettes.first { arguments.contains($0.name) } ?? palettes[2]   // graphite by default
-let iconset = NSTemporaryDirectory() + "BooxSync.iconset"
-try? fm.removeItem(atPath: iconset)
-try fm.createDirectory(atPath: iconset, withIntermediateDirectories: true)
+try fm.createDirectory(atPath: "Resources", withIntermediateDirectories: true)
+try fm.createDirectory(atPath: "assets", withIntermediateDirectories: true)
+
 let variants: [(String, Int)] = [
     ("icon_16x16", 16), ("icon_16x16@2x", 32), ("icon_32x32", 32), ("icon_32x32@2x", 64),
     ("icon_128x128", 128), ("icon_128x128@2x", 256), ("icon_256x256", 256), ("icon_256x256@2x", 512),
     ("icon_512x512", 512), ("icon_512x512@2x", 1024),
 ]
-for (name, size) in variants { try write(render(size: size, palette: chosen), to: "\(iconset)/\(name).png") }
-try fm.createDirectory(atPath: "Resources", withIntermediateDirectories: true)
-try fm.createDirectory(atPath: "assets", withIntermediateDirectories: true)
-try write(render(size: 1024, palette: chosen), to: "assets/logo.png")
 
-let task = Process()
-task.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
-task.arguments = ["-c", "icns", iconset, "-o", "Resources/AppIcon.icns"]
-try task.run()
-task.waitUntilExit()
-print(task.terminationStatus == 0 ? "wrote Resources/AppIcon.icns and assets/logo.png (\(chosen.name))" : "iconutil failed")
+/// Writes an .icns for the release icon or the badged dev icon.
+func makeIcns(dev: Bool, output: String) throws {
+    let iconset = NSTemporaryDirectory() + (dev ? "BooxSyncDev.iconset" : "BooxSync.iconset")
+    try? fm.removeItem(atPath: iconset)
+    try fm.createDirectory(atPath: iconset, withIntermediateDirectories: true)
+    for (name, size) in variants { try write(render(size: size, palette: chosen, dev: dev), to: "\(iconset)/\(name).png") }
+    let task = Process()
+    task.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
+    task.arguments = ["-c", "icns", iconset, "-o", output]
+    try task.run()
+    task.waitUntilExit()
+    print(task.terminationStatus == 0 ? "wrote \(output)" : "iconutil failed for \(output)")
+}
+
+try write(render(size: 1024, palette: chosen), to: "assets/logo.png")
+try makeIcns(dev: false, output: "Resources/AppIcon.icns")
+try makeIcns(dev: true, output: "Resources/AppIcon-dev.icns")
+print("palette: \(chosen.name)")

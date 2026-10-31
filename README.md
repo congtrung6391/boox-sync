@@ -85,7 +85,25 @@ What the workflow does not do:
 - **Signing.** By default the app is ad-hoc signed, and macOS asks for the permissions again after each update. To keep permissions across releases, sign with the same certificate every time: export your `BooxSync Local Signing` certificate from Keychain Access as a `.p12` and add these repository secrets: `MACOS_CERT_P12_BASE64` (`base64 -i cert.p12`), `MACOS_CERT_PASSWORD`, and `MACOS_CERT_NAME` (`BooxSync Local Signing`).
 - **The Android apps.** `android/` holds an optional fallback and a probe, which the release does not build.
 
-Locally, `BOOXSYNC_VERSION=0.2.0 scripts/make-dmg.sh` produces the same dmg; without the variable it uses `VERSION`. The package registry holds the dmg as an OCI artifact, so use `oras` (see Install) to download it; the Release page is the easier route for most people.
+Locally, `BOOXSYNC_CHANNEL=release BOOXSYNC_VERSION=0.2.0 scripts/make-dmg.sh` produces the same dmg; without the variable it uses `VERSION`. The package registry holds the dmg as an OCI artifact, so use `oras` (see Install) to download it; the Release page is the easier route for most people.
+
+## Dev builds and release builds
+Local builds and the released app are different apps to macOS, so their permissions never mix:
+
+| | Release (from the dmg) | Dev (`scripts/build-app.sh`) |
+|---|---|---|
+| Name in the Dock and Privacy lists | BooxSync | BooxSync Dev (icon with an amber DEV badge) |
+| Bundle id | `dev.booxsync.app` | `dev.booxsync.app.dev` |
+| Built with | `BOOXSYNC_CHANNEL=release` (the release workflow) | the default channel |
+
+Each one asks for Screen Recording, Accessibility and Automation once. They share the Boox display ports, so run only one at a time. Saved settings (such as the dashboard layout) live per bundle id; a dev build starts with its own copy.
+
+If you ever see duplicate BooxSync rows or permissions that do not stick, clear one identity and grant it again:
+```bash
+tccutil reset ScreenCapture dev.booxsync.app        # release; use dev.booxsync.app.dev for the dev build
+tccutil reset Accessibility dev.booxsync.app
+tccutil reset AppleEvents dev.booxsync.app
+```
 
 ## Keeping permissions across rebuilds (developers)
 macOS ties Screen Recording, Accessibility and Automation grants to the app's code signature, and an ad-hoc signature changes on every build. Run this once to create a local self-signed certificate in your login keychain; `scripts/build-app.sh` then signs with it automatically:
