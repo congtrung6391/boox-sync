@@ -47,16 +47,37 @@ swift run CoreChecks      # parser and protocol checks; add --live with a Boox c
 swift scripts/make-icon.swift   # regenerates Resources/AppIcon.icns and assets/logo.png
 ```
 
+## Versioning and changelog
+Versions follow [Semantic Versioning](https://semver.org/) and are chosen automatically from commit messages written as [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): subject`.
+
+| Commit | Version bump |
+|---|---|
+| `feat: ...` | minor (0.1.0 to 0.2.0) |
+| `fix: ...`, `perf: ...`, `revert: ...` | patch (0.1.0 to 0.1.1) |
+| `feat!: ...`, or `BREAKING CHANGE:` in the body | major (while below 1.0.0, a minor bump instead) |
+| `docs`, `refactor` | listed in the changelog, no bump on their own |
+| `build`, `ci`, `chore`, `test`, `style` | not listed, no bump |
+
+- `VERSION` holds the current version and `CHANGELOG.md` the history. Both are updated by the release workflow, not by hand. The first section (0.1.0) was written by hand.
+- Preview the next release at any time: `python3 scripts/release.py plan` (nothing is written without `--write`).
+- Force a bump or an exact version with `--bump patch|minor|major` or `--version 1.0.0`. With nothing releasable since the last tag (only docs or chores), the script stops and asks for a forced bump.
+- Check messages as you commit: `scripts/install-hooks.sh` enables a `commit-msg` hook that rejects anything that is not a Conventional Commit.
+- Tests: `python3 scripts/test_release.py`.
+
 ## Releases
 Releases are built by a manually triggered GitHub Actions workflow, `.github/workflows/release.yml`:
 
-1. Open **Actions > Release build > Run workflow** on GitHub.
-2. Enter the version (for example `0.2.0`) and choose:
+1. Open **Actions > Release build > Run workflow** on GitHub (on the `main` branch).
+2. Choose:
+   - **bump**: `auto` (from the commit messages since the last tag), or force `patch`, `minor` or `major`,
+   - **version**: optional exact version, overrides the bump,
+   - **dry_run**: only show the planned version and changelog entry in the run summary, build and publish nothing,
    - **prerelease**: mark the release as a pre-release (the package is then not tagged `latest`),
    - **publish_package**: push the dmg to the GitHub package registry as `ghcr.io/congtrung6391/boox-sync:<version>`,
-   - **create_release**: also create a GitHub Release `v<version>` with the dmg and a `.sha256` file.
-3. The workflow runs the checks, bundles adb, builds `dist/BooxSync-<version>.dmg` on a macOS runner, and publishes it.
-   The dmg is also kept as a run artifact.
+   - **create_release**: also create a GitHub Release `v<version>` whose notes are the new changelog section, with the dmg and a `.sha256` file attached.
+3. The workflow plans the version, updates `VERSION` and `CHANGELOG.md`, runs the checks, bundles adb, builds `dist/BooxSync-<version>.dmg` on a macOS runner, and only then pushes the release commit (`chore(release): vX.Y.Z`) and the tag `vX.Y.Z` to `main` and publishes. A failed build leaves no commit or tag behind. The dmg is also kept as a run artifact.
+
+If `main` has branch protection that blocks pushes from `github-actions[bot]`, allow it to bypass, or the push step fails.
 
 What the workflow does not do:
 
@@ -64,7 +85,7 @@ What the workflow does not do:
 - **Signing.** By default the app is ad-hoc signed, and macOS asks for the permissions again after each update. To keep permissions across releases, sign with the same certificate every time: export your `BooxSync Local Signing` certificate from Keychain Access as a `.p12` and add these repository secrets: `MACOS_CERT_P12_BASE64` (`base64 -i cert.p12`), `MACOS_CERT_PASSWORD`, and `MACOS_CERT_NAME` (`BooxSync Local Signing`).
 - **The Android apps.** `android/` holds an optional fallback and a probe, which the release does not build.
 
-Locally, `BOOXSYNC_VERSION=0.2.0 scripts/make-dmg.sh` produces the same dmg. The package registry holds the dmg as an OCI artifact, so use `oras` (above) to download it; the Release page is the easier route for most people.
+Locally, `BOOXSYNC_VERSION=0.2.0 scripts/make-dmg.sh` produces the same dmg; without the variable it uses `VERSION`. The package registry holds the dmg as an OCI artifact, so use `oras` (see Install) to download it; the Release page is the easier route for most people.
 
 ## Keeping permissions across rebuilds (developers)
 macOS ties Screen Recording, Accessibility and Automation grants to the app's code signature, and an ad-hoc signature changes on every build. Run this once to create a local self-signed certificate in your login keychain; `scripts/build-app.sh` then signs with it automatically:

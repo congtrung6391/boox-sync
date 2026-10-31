@@ -1,0 +1,29 @@
+#!/bin/sh
+# Enforces Conventional Commits so scripts/release.py can pick the next version and write the changelog.
+# Install once with: scripts/install-hooks.sh
+first_line=$(head -n 1 "$1")
+
+# Merge, revert, fixup and squash commits made by git itself are fine.
+case "$first_line" in
+  Merge\ *|Revert\ \"*|fixup!\ *|squash!\ *) exit 0 ;;
+esac
+
+pattern='^(feat|fix|perf|revert|docs|refactor|build|ci|chore|test|style)(\([a-zA-Z0-9._/-]+\))?!?: .+'
+if printf '%s' "$first_line" | grep -Eq "$pattern" && [ "${#first_line}" -le 100 ]; then
+  exit 0
+fi
+
+cat >&2 <<MESSAGE
+Commit message does not follow Conventional Commits:
+  $first_line
+
+Use:  <type>(<optional scope>): <subject>        (first line up to 100 characters)
+Types: feat, fix, perf, revert, docs, refactor, build, ci, chore, test, style
+Examples:
+  feat(dashboard): add a weather component
+  fix(mirror): stop showing a stale frame
+  feat!: change the layout file format          (breaking change, bumps the major version)
+
+feat -> minor, fix/perf/revert -> patch, ! or "BREAKING CHANGE:" in the body -> major (minor while below 1.0.0).
+MESSAGE
+exit 1

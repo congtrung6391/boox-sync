@@ -3,7 +3,7 @@
 # Bundles adb (universal, system libraries only) so the app works without Homebrew.
 # Usage: scripts/build-app.sh [--adb /path/to/adb] [--no-bundle-adb]
 # Environment (all optional, used by the release workflow):
-#   BOOXSYNC_VERSION         marketing version for Info.plist (default 0.1.0)
+#   BOOXSYNC_VERSION         marketing version for Info.plist (default: the VERSION file)
 #   BOOXSYNC_BUILD           build number for Info.plist (default 1)
 #   BOOXSYNC_SIGN_IDENTITY   codesign identity name or hash (default: the local certificate, else ad-hoc)
 set -euo pipefail
@@ -18,7 +18,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-VERSION=${BOOXSYNC_VERSION:-0.1.0}
+VERSION=${BOOXSYNC_VERSION:-$(tr -d '[:space:]' < VERSION)}
 BUILD=${BOOXSYNC_BUILD:-1}
 
 # Prefer an identity from the environment (CI), then the stable local certificate (scripts/setup-signing.sh) so

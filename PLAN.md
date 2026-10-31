@@ -69,6 +69,7 @@ Companion docs: DESIGN.md (architecture), SPIKE.md (measurements). Update the St
 | 4.5 | GitHub Actions: build dmg and apk on tag, attach to release | 4.2, 4.3 | tag produces a release | written: manual workflow, dmg to ghcr.io (OCI) and a GitHub Release; not yet run on GitHub |
 | 4.7 | Stable local code signing (`scripts/setup-signing.sh`, build script signs with it): permissions survive rebuilds | 4.2 | designated requirement identical across builds | done |
 | 4.8 | App icon and logo (graphite tile, Mac display, Boox showing a page; palettes: graphite, indigo, coral, forest) drawn in code (`scripts/make-icon.swift` writes `Resources/AppIcon.icns` and `assets/logo.png`), bundled by the build script, shown in the README | 4.2 | icon shows in the Dock and Finder | done, awaiting visual check |
+| 4.9 | Semantic versioning and changelog: `VERSION`, `CHANGELOG.md`, `scripts/release.py` (Conventional Commits to next version and changelog section), unit tests, commit-msg hook, release workflow with plan job, dry run and bump input | 4.5 | version bumped automatically and changelog written by the workflow | written and tested locally; workflow not yet run on GitHub |
 | 4.6 | Licence file (Apache-2.0 or MIT) and third-party notices | | present in repo and bundle | done: MIT, THIRD_PARTY_NOTICES.md |
 
 ### WS5 Quality and polish (ongoing)
