@@ -6,6 +6,12 @@ made. The 0.1.0 section below was written by hand for the first release.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-10-31
+
+### Features
+
+- **dashboard:** add a dark theme ([ddfc211](https://github.com/congtrung6391/boox-sync/commit/ddfc2119b08f1d405388aeff7e0c0b11b7ed3b42))
+
 ## [1.0.2] - 2026-10-31
 
 ### Bug fixes
