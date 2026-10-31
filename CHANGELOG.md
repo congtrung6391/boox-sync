@@ -6,6 +6,12 @@ made. The 0.1.0 section below was written by hand for the first release.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] - 2026-10-31
+
+### Bug fixes
+
+- **build:** separate bundle ids for dev and release builds ([129df95](https://github.com/congtrung6391/boox-sync/commit/129df95f4e1290058a92fada159c873495a8a9b5))
+
 ## [1.0.1] - 2026-10-31
 
 No user-facing changes.
